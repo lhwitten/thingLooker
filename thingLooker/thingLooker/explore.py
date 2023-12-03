@@ -6,7 +6,7 @@ from geometry_msgs.msg import Quaternion
 from nav_msgs.msg import Odometry
 import math
 import numpy as np
-
+import angle_helpers
 
 from sensor_msgs.msg import Image
 from std_srvs.srv import Trigger
@@ -29,6 +29,7 @@ class position_knower(Node):
             self.xpos = 0.0
             self.ypos = 0.0
             self.zpos = 0.0
+            self.theta = 0.0
 
             self.cam_phi = np.pi/16
             #self.angular = 0.0
@@ -62,6 +63,8 @@ class position_knower(Node):
         #my_quaternion = pyq.Quaternion(robot_q.w,robot_q.x,robot_q.y,robot_q.z)
         #self.orientation = my_quaternion
         self.orientation = msg.pose.pose.orientation
+
+        self.theta = angle_helpers.euler_from_quaternion(self.orientation.x,self.orientation.y,self.orientation.z,self.orientation.w)
 
 
     
