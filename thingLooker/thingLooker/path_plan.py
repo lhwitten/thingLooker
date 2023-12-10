@@ -3,6 +3,7 @@ import sympy as sp
 from shapely.geometry import LineString
 from matplotlib.path import Path
 import matplotlib.pyplot as plt
+from python_tsp.heuristics import solve_tsp_simulated_annealing
 
 #function for checking if two circles overlap
 def check_overlap_circle(O1,O2,r):
@@ -165,6 +166,34 @@ def place_circles(boundary_mat, radius, P_start, div_num):
     
     return np.array(center_list)
 
+def place_circles_bfs(boundary_mat, radius, P_start, div_num):
+    center_list = [P_start]
+    queue = [0]
+    angular_step = 2 * np.pi / div_num
+
+    while queue:
+        main_center = center_list[queue[0]]
+        for i in range(div_num):
+            cand_pt = [
+                main_center[0] + 2 * radius * np.cos(np.pi - angular_step * i),
+                main_center[1] + 2 * radius * np.sin(np.pi - angular_step * i)
+            ]
+            #print(f"point is in region {check_point_inregion(cand_pt, boundary_mat)}")
+
+            #print(f"point overlaps {check_all_overlap(center_list, cand_pt, radius)}")
+
+            if check_point_inregion(cand_pt, boundary_mat) and not check_all_overlap(center_list, cand_pt, radius):
+                #print(center_list)
+                center_list.append(cand_pt)
+                queue.append(len(center_list) - 1)
+                break
+            if i == div_num - 1:
+                queue.pop(0)
+        
+    #print(center_list)
+    
+    return np.array(center_list)
+
 def check_point_inregion(Point, vertex_mat):
     """M = len(vertex_mat) - 1
     x0, y0 = Point
@@ -208,39 +237,43 @@ import math
 import random
 
 def calculate_total_distance(points, order):
-    total_distance = 0
-    for i in range(len(order)):
-        total_distance += np.linalg.norm(np.array(points[order[i - 1]]) - np.array(points[order[i]]))
-    return total_distance
+    """Calculate the total distance of the path described by the given order of points."""
+    return sum(np.linalg.norm(np.array(points[order[i - 1]]) - np.array(points[order[i]])) for i in range(len(order)))
 
-def swap_two(order):
-    idx1, idx2 = random.sample(range(1, len(order)), 2)  # Avoid swapping the first city
-    new_order = order[:]
-    new_order[idx1], new_order[idx2] = new_order[idx2], new_order[idx1]
-    return new_order
+def swap_two_cities(order):
+    """Swap two cities in the order, excluding the first city."""
+    idx1, idx2 = random.sample(range(1, len(order)), 2)  # Exclude the first city from swapping
+    order[idx1], order[idx2] = order[idx2], order[idx1]
+    return order
 
-def simulated_annealing(points, temperature=10000, cooling_rate=0.003):
+def simulated_annealing(points, temperature=10000, cooling_rate=0.99, stopping_temperature=1e-8, stopping_iter=10000):
+    """Perform the simulated annealing algorithm."""
     current_order = list(range(len(points)))
-    current_distance = calculate_total_distance(points, current_order)
     best_order = current_order[:]
+    current_distance = calculate_total_distance(points, current_order)
     best_distance = current_distance
+    iteration = 1
 
-    while temperature > 1:
-        new_order = swap_two(current_order)
-        new_distance = calculate_total_distance(points, new_order)
-
-        if new_distance < best_distance:
-            best_order = new_order[:]
-            best_distance = new_distance
-
-        # Acceptance probability to decide if we should move to the solution or stay with the current one
-        acceptance_probability = math.exp((current_distance - new_distance) / temperature)
-        if new_distance < current_distance or random.random() < acceptance_probability:
-            current_order = new_order[:]
-            current_distance = new_distance
-
-        # Cool down the temperature
-        temperature *= 1 - cooling_rate
+    while temperature > stopping_temperature and iteration < stopping_iter:
+        candidate_order = swap_two_cities(current_order.copy())
+        candidate_distance = calculate_total_distance(points, candidate_order)
+        
+        # Probability of accepting worse solution
+        acceptance_probability = math.exp(-abs(candidate_distance - current_distance) / temperature)
+        
+        # Decide if we should accept the new order
+        if candidate_distance < current_distance or random.random() < acceptance_probability:
+            current_order = candidate_order
+            current_distance = candidate_distance
+        
+        # Update the best order and distance found
+        if candidate_distance < best_distance:
+            best_order = candidate_order
+            best_distance = candidate_distance
+        
+        # Cool down the temperature and increment iteration count
+        temperature *= cooling_rate
+        iteration += 1
 
     return best_order, best_distance
 
@@ -268,3 +301,69 @@ def plot_best_path(points, best_order):
     plt.legend()
 
     # Show the plot
+
+
+def create_distance_matrix(points):
+    """
+    Creates a distance matrix from a list of (x, y) coordinates.
+
+    Args:
+    - points: A list of tuples, where each tuple represents the (x, y) coordinates of a point.
+
+    Returns:
+    - A 2D numpy array representing the distance matrix.
+    """
+    num_points = len(points)
+    distance_matrix = np.zeros((num_points, num_points))
+
+    for i in range(num_points):
+        for j in range(num_points):
+            if i != j:
+                distance_matrix[i, j] = np.linalg.norm(np.array(points[i]) - np.array(points[j]))
+
+    return distance_matrix
+
+"""# Example usage
+points = [(0, 0), (1, 2), (3, 4), (6, 8)]  # Replace with your points
+distance_matrix = create_distance_matrix(points)
+print(distance_matrix)
+"""
+
+def get_waypoint_list(boundary_vertices,r):
+    """
+    Path plan a route through a known closed area using circle packing
+
+    r = radius to pack
+    boundary_vertices = numpy array full of x,y pairs
+    
+    
+    """
+    
+    
+    """boundary_vertices = np.array([
+    [0, 0],
+    [1, 8],
+    [0, 10],
+    [2, 12],
+    [6, 7],
+    [4, 3],
+    [10, 2],
+    [6, 0],
+    [0, 0]
+    ])"""
+
+    inside_pt = np.array([1, 1.2])
+    r = .4
+
+    # Construct the q_list using the provided function
+    q_mat = construct_q_list(boundary_vertices, inside_pt, r)
+
+    #center_list = path_plan.place_circles(q_mat,r,q_mat[0,:],60)
+
+    center_list = place_circles_bfs(q_mat,r,q_mat[0,:],60)
+
+
+    dist_mat = create_distance_matrix(center_list)
+    permutation, distance = solve_tsp_simulated_annealing(dist_mat)
+
+    return center_list,permutation

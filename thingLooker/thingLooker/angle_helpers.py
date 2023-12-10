@@ -23,7 +23,7 @@ def euler_from_quaternion(x, y, z, w):
      
     return roll_x, pitch_y, yaw_z # in radians
 
-def rot_mat_from_quaternion(x,y,z,w,xpos,ypos,zpos):
+def Rt_mat_from_quaternion(x,y,z,w,xpos,ypos,zpos):
 
     roll, pitch, yaw = euler_from_quaternion(x, y, z, w)
 
@@ -47,9 +47,9 @@ def rot_mat_from_quaternion(x,y,z,w,xpos,ypos,zpos):
 
     # The rotation matrix is the product of individual rotation matrices
     R = np.dot(Rz_yaw, np.dot(Ry_pitch, Rx_roll))
-    R = np.vstack([R, np.array([[0.0], [0.0], [0.0]])])
-    R = np.hstack([R, np.array([[xpos], [ypos], [zpos], [1]])])
-    
+    R = np.vstack([R, np.array([0.0, 0.0, 0.0])])
+    R = np.hstack([R, np.array([[xpos], [ypos], [zpos], [1.0]])])
+
     return R
 
 
