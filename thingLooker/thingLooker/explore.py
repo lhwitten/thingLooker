@@ -46,7 +46,11 @@ class position_knower(Node):
 
 
     def run_loop(self):
-        pass
+        
+        c2w_mat = angle_helpers.Rt_mat_from_quaternion(self.orientation.x,self.orientation.y,self.orientation.z,self.orientation.w,self.xpos,self.ypos)
+
+        
+
 
     def get_cam(self,msg):
         
