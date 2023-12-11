@@ -5,8 +5,12 @@ from geometry_msgs.msg import PoseWithCovariance
 from geometry_msgs.msg import Quaternion
 from nav_msgs.msg import Odometry
 import math
+import json
 import numpy as np
-import angle_helpers
+import subprocess
+import cv2
+import matplotlib.pyplot as plt
+from .angle_helpers import *
 
 from sensor_msgs.msg import Image
 from std_srvs.srv import Trigger
@@ -47,8 +51,25 @@ class position_knower(Node):
 
     def run_loop(self):
         
-        c2w_mat = angle_helpers.Rt_mat_from_quaternion(self.orientation.x,self.orientation.y,self.orientation.z,self.orientation.w,self.xpos,self.ypos)
+        c2w_mat = Rt_mat_from_quaternion(self.orientation.x,self.orientation.y,self.orientation.z,self.orientation.w,self.xpos,self.ypos,self.zpos)
+        #print(f"c2w_mat: {c2w_mat}")
+        list_c2w_mat = c2w_mat.tolist()
+        string_c2w = json.dumps(list_c2w_mat)
+        #print(f"string_c2w_mat: {str(c2w_mat)}")
+        #print(f"json: {string_c2w}")
+        process = subprocess.Popen(['/home/jess/ros2_ws/run_load_model.sh', string_c2w],
+                           stdout=subprocess.PIPE, 
+                           stderr=subprocess.PIPE)
 
+        stdout, stderr = process.communicate()
+        try:
+            rgba = json.loads(stdout.decode())
+            print("Received array:", rgba)
+            plt.imshow(rgba)
+            plt.show()
+            plt.close()
+        except json.JSONDecodeError:
+            print("Error decoding JSON:", stderr.decode())
         
 
 
@@ -68,7 +89,7 @@ class position_knower(Node):
         #self.orientation = my_quaternion
         self.orientation = msg.pose.pose.orientation
 
-        self.theta = angle_helpers.euler_from_quaternion(self.orientation.x,self.orientation.y,self.orientation.z,self.orientation.w)
+        self.theta = euler_from_quaternion(self.orientation.x,self.orientation.y,self.orientation.z,self.orientation.w)
 
 
     
