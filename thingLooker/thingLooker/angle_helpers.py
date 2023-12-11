@@ -47,8 +47,8 @@ def Rt_mat_from_quaternion(x,y,z,w,xpos,ypos,zpos):
 
     # The rotation matrix is the product of individual rotation matrices
     R = np.dot(Rz_yaw, np.dot(Ry_pitch, Rx_roll))
-    R = np.vstack([R, np.array([0.0, 0.0, 0.0])])
-    R = np.hstack([R, np.array([[xpos], [ypos], [zpos], [1.0]])])
+    #R = np.vstack([R, np.array([0.0, 0.0, 0.0])])
+    R = np.hstack([R, np.array([[xpos], [ypos], [zpos]])])
 
     return R
 

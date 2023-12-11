@@ -11,6 +11,8 @@ import subprocess
 import cv2
 import matplotlib.pyplot as plt
 from .angle_helpers import *
+from PIL import Image as img
+import io
 
 from sensor_msgs.msg import Image
 from std_srvs.srv import Trigger
@@ -56,20 +58,20 @@ class position_knower(Node):
         list_c2w_mat = c2w_mat.tolist()
         string_c2w = json.dumps(list_c2w_mat)
         #print(f"string_c2w_mat: {str(c2w_mat)}")
-        #print(f"json: {string_c2w}")
+        print(f"json: {string_c2w}")
         process = subprocess.Popen(['/home/jess/ros2_ws/run_load_model.sh', string_c2w],
                            stdout=subprocess.PIPE, 
                            stderr=subprocess.PIPE)
 
-        stdout, stderr = process.communicate()
-        try:
-            rgba = json.loads(stdout.decode())
-            print("Received array:", rgba)
-            plt.imshow(rgba)
-            plt.show()
-            plt.close()
-        except json.JSONDecodeError:
-            print("Error decoding JSON:", stderr.decode())
+        process.communicate()
+        #print(f"stdout: {stdout}")
+        #rgba = json.loads(received_img_data)
+        #print("Received array:", rgba)
+        # Convert binary data to an image
+        image = img.open('/home/jess/ros2_ws/output_image.png')
+
+        # Now you can process the image as needed, e.g., display it, convert it, etc.
+        image.show()
         
 
 
