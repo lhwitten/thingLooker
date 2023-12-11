@@ -111,9 +111,9 @@ def get_camera():
     vid = cv2.VideoCapture(0) 
 
     ret, frame = vid.read() 
-    
+    print("Got frame")
     # Display the resulting frame 
-    cv2.imshow('frame', frame) 
+    #cv2.imshow('frame', frame) 
     
     while(True): 
         
@@ -185,6 +185,7 @@ def compare_and_visualize_differences(img1, img2, min_contour_area=100):
             cv2.drawContours(filled, [c], 0, (0, 255, 0), -1)
 
     # Display the images
+    print("DISPLAYING IMAGES")
     cv2.imshow('first', img1)
     cv2.imshow('second', img2)
     cv2.imshow('diff', diff)
@@ -240,7 +241,33 @@ def replace_blurry_regions(img1, img2, blur_threshold=100):
 
     return img1, img2
 
+def get_image_size(img):
+    """
+    Return the size (width, height) of the image at the given path.
 
-get_camera()
+    :param image_path: Path to the image.
+    :return: A tuple (width, height).
+    """
+    #img = cv2.imread(image_path)
+    if isinstance(img, np.ndarray):
+        return img.shape[1], img.shape[0]
+    else:
+        return img.size[1], img.size[0]  # Width, Height
+
+def resize_image(img, size):
+    """
+    Resize an image to the given size and save it to the output path.
+
+    :param input_path: Path to the input image.
+    :param output_path: Path to save the resized image.
+    :param size: A tuple (width, height) for the target size.
+    """
+    #img = cv2.imread(input_path)
+    resized_img = cv2.resize(img, size, interpolation=cv2.INTER_AREA)
+
+    return resized_img
+    
+
+#get_camera()
 
 

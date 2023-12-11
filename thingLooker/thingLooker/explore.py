@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from .angle_helpers import *
 from PIL import Image as img
 import io
+from .compare_images import *
 
 from sensor_msgs.msg import Image
 from std_srvs.srv import Trigger
@@ -54,7 +55,17 @@ class position_knower(Node):
     def run_loop(self):
         
         c2w_mat = Rt_mat_from_quaternion(self.orientation.x,self.orientation.y,self.orientation.z,self.orientation.w,self.xpos,self.ypos,self.zpos)
-        #print(f"c2w_mat: {c2w_mat}")
+        #nerf_pic = self.get_nerf_pic(c2w_mat)
+        self.image_compare(c2w_mat)
+        
+
+
+    def get_cam(self,msg):
+        
+        self.last_cam = msg
+
+    def get_nerf_pic(self, c2w_mat):
+                 #print(f"c2w_mat: {c2w_mat}")
         list_c2w_mat = c2w_mat.tolist()
         string_c2w = json.dumps(list_c2w_mat)
         #print(f"string_c2w_mat: {str(c2w_mat)}")
@@ -68,16 +79,12 @@ class position_knower(Node):
         #rgba = json.loads(received_img_data)
         #print("Received array:", rgba)
         # Convert binary data to an image
-        image = img.open('/home/jess/ros2_ws/output_image.png')
-
+        # Python Image Library (PIL / pillow) image
+        #image = img.open('/home/jess/ros2_ws/output_image.png')
+        image = cv2.imread('/home/jess/ros2_ws/output_image.png')
+        return image
         # Now you can process the image as needed, e.g., display it, convert it, etc.
-        image.show()
-        
-
-
-    def get_cam(self,msg):
-        
-        self.last_cam = msg
+        #image.show()
     
     def process_odom(self,msg):
 
@@ -95,16 +102,38 @@ class position_knower(Node):
 
 
     
-    def image_compare(self):
+    def image_compare(self,c2w_mat):
          
          #camera_img = camera()
+        print("NeRF image being collected")
+        NeRF_img =  self.get_nerf_pic(c2w_mat)
+        print("NeRF image collected")
+        size_Nerf = get_image_size(NeRF_img)
 
-         NeRF_img = Nerf.forward(self.xpos,self.ypos,self.zpos,THETA,self.cam_phi)
+        vid = cv2.VideoCapture(0)
+        ret, frame = vid.read()     
+        print("Got frame")
+        #size_cam = get_image_size(self.last_cam)
 
-         camera_img, NeRF_img = resize_images(self.last_cam, NeRF_img)
+        print(frame)
+        print(type(frame))
+        size_cam = get_image_size(frame)
+
+        # Determine the smaller size
+        target_size = min(size_Nerf, size_cam, key=lambda x: x[0] * x[1])
+
+        # Resize first image
+        NeRF_img = resize_image(NeRF_img, target_size)
+
+        
+        # Resize second image
+        #camera_img = resize_image(self.last_cam, target_size)
+        camera_img = resize_image(frame, target_size)
 
 
-         compare_images()
+        compare_and_visualize_differences(NeRF_img,camera_img)
+
+
 
 
 
