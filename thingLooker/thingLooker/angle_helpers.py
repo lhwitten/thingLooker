@@ -52,6 +52,37 @@ def Rt_mat_from_quaternion(x,y,z,w,xpos,ypos,zpos):
 
     return R
 
+def Rt_mat_from_quaternion_44(x,y,z,w,xpos,ypos,zpos):
+
+    roll, pitch, yaw = euler_from_quaternion(x, y, z, w)
+
+    Rz_yaw = np.array([
+        [math.cos(yaw), -math.sin(yaw), 0],
+        [math.sin(yaw),  math.cos(yaw), 0],
+        [0,             0,             1]
+    ])
+
+    Ry_pitch = np.array([
+        [math.cos(pitch), 0, math.sin(pitch)],
+        [0,              1,              0],
+        [-math.sin(pitch), 0, math.cos(pitch)]
+    ])
+
+    Rx_roll = np.array([
+        [1, 0,               0],
+        [0, math.cos(roll), -math.sin(roll)],
+        [0, math.sin(roll),  math.cos(roll)]
+    ])
+
+    # The rotation matrix is the product of individual rotation matrices
+    R = np.dot(Rz_yaw, np.dot(Ry_pitch, Rx_roll))
+    #R = np.vstack([R, np.array([0.0, 0.0, 0.0])])
+    R = np.hstack([R, np.array([[xpos], [ypos], [zpos]])])
+    
+    R = np.vstack([R, np.array([0, 0, 0, 1])])
+
+    return R
+
 
 
 
