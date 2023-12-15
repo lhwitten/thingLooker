@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
         'explore=thingLooker.explore:main'
+        'get_nerf_data=thingLooker.get_nerf_data:main'
         ],
     },
 )
