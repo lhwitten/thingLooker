@@ -74,14 +74,16 @@ def Rt_mat_from_quaternion_44(x,y,z,w,xpos,ypos,zpos):
         [0, math.sin(roll),  math.cos(roll)]
     ])
 
-    # The rotation matrix is the product of individual rotation matrices
     R = np.dot(Rz_yaw, np.dot(Ry_pitch, Rx_roll))
     #R = np.vstack([R, np.array([0.0, 0.0, 0.0])])
     R = np.hstack([R, np.array([[xpos], [ypos], [zpos]])])
     
     R = np.vstack([R, np.array([0, 0, 0, 1])])
 
-    return R
+    #  Convert to camera coordinate system
+    cam_frame = np.array([[0, 0, -1, 0], [-1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+
+    return np.matmul(R, cam_frame)
 
 
 
