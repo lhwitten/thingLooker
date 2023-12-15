@@ -353,7 +353,7 @@ def get_waypoint_list(boundary_vertices,r):
     ])"""
 
     inside_pt = np.array([1, 1.2])
-    r = .4
+    #r = .4
 
     # Construct the q_list using the provided function
     q_mat = construct_q_list(boundary_vertices, inside_pt, r)
@@ -365,5 +365,16 @@ def get_waypoint_list(boundary_vertices,r):
 
     dist_mat = create_distance_matrix(center_list)
     permutation, distance = solve_tsp_simulated_annealing(dist_mat)
+    
+    order = permutation
+    items = center_list
 
-    return center_list,permutation
+    # Pair each item with its order, then sort by order
+    paired = zip(order, items)
+    sorted_pairs = sorted(paired)
+
+    # Extract the items from the sorted pairs
+    sorted_items = [item for _, item in sorted_pairs]
+    return sorted_items
+
+    #return center_list,permutation

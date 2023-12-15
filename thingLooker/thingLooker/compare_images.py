@@ -13,6 +13,8 @@ import glob
 import os
 import matplotlib.pyplot as plt
 
+import skimage
+
 def image_compare_SSIM(img1,img2):
 
     # Convert images to grayscale

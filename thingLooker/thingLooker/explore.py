@@ -14,6 +14,7 @@ from .angle_helpers import *
 from PIL import Image as img
 import io
 from .compare_images import *
+from .path_plan import *
 
 from sensor_msgs.msg import Image
 from std_srvs.srv import Trigger
@@ -38,7 +39,7 @@ class position_knower(Node):
             self.zpos = 0.0
             self.theta = 0.0
 
-            self.cam_phi = np.pi/16
+            self.cam_phi = np.pi/16 #orientation of the camera
             #self.angular = 0.0
 
             #position of last turn
@@ -50,6 +51,26 @@ class position_knower(Node):
             self.wait = False
             self.w_count = 0
 
+            #whether to use pathplanning or not
+            self.path_plan = True
+
+            #path planning parameters
+            self.goal_distance = 1 # from geometry, where we want to watch the 
+            self.camera_angle = np.pi/8 #radian angle of viewing from the camera
+
+            self.boundary_vertices = np.array([
+                [0, 0],
+                [1, 8],
+                [5, 10],
+                [4, 0],
+                [0, 0]])
+            self.waypoints_ordered = get_waypoint_list(self.boundary_vertices,.4)
+            self.waypoints_ordered.pop(0) #get rid of points we're standing at
+
+
+
+
+
 
 
     def run_loop(self):
@@ -57,8 +78,70 @@ class position_knower(Node):
         c2w_mat = Rt_mat_from_quaternion(self.orientation.x,self.orientation.y,self.orientation.z,self.orientation.w,self.xpos,self.ypos,self.zpos)
         #nerf_pic = self.get_nerf_pic(c2w_mat)
         self.image_compare(c2w_mat)
-        
 
+        if (self.path_plan and self.waypoints_ordered):
+            #velpub happens here as well
+            self.pid_to_waypoint()
+        else:
+            msg = Twist()
+            msg.linear.x = 0.0
+            msg.angular.z = 0.0
+            self.vel_pub.publish(msg)
+            #send basically nothing
+
+    
+    def pid_to_waypoint(self):
+
+        goal_distance = self.goal_distance
+
+        waypoint = self.waypoints_ordered[0]
+
+        msg = Twist()
+
+        distance, angle = self.pythag(waypoint[0],waypoint[1])
+        msg.linear.x = .1*(distance - goal_distance)
+
+        if angle:
+            msg.angular.z = .2*angle
+        else:
+            msg.angular.z = .1
+
+        self.vel_pub.publish(msg)
+
+        angle_threshold = np.pi/32
+        if ( (np.abs(distance) < goal_distance*1.1 ) and ( np.abs(angle) < angle_threshold )):
+            self.waypoints_ordered.pop(0)
+            
+            #do image comparison here
+            c2w_mat = Rt_mat_from_quaternion(self.orientation.x,self.orientation.y,self.orientation.z,self.orientation.w,self.xpos,self.ypos,self.zpos)
+            #nerf_pic = self.get_nerf_pic(c2w_mat)
+            self.image_compare(c2w_mat)
+
+            #image comparison over
+
+            if self.waypoints_ordered:
+                print("waypoint reached, new waypoint added")
+            else:
+                print("No more waypoints, quitting")
+
+
+            
+
+
+    def pythag(self,goal_p_x,goal_p_y):
+
+        distance = math.sqrt( (self.xpos - goal_p_x)**2 +  (self.ypos - goal_p_y)**2)
+
+        #angular_distance = abs(self.ang_bench - self.angular)
+
+        roll_x, pitch_y, yaw_z= euler_from_quaternion(self.orientation.x,self.orientation.y,self.orientation.z,self.orientation.w)
+
+        angle_to_waypoint = math.atan2(goal_p_y - self.ypos, goal_p_x - self.xpos)
+
+        angular_distance = angle_to_waypoint - yaw_z
+
+
+        return distance,angular_distance
 
     def get_cam(self,msg):
         
@@ -132,8 +215,6 @@ class position_knower(Node):
 
 
         compare_and_visualize_differences(NeRF_img,camera_img)
-
-
 
 
 
