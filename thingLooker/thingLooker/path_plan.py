@@ -4,9 +4,14 @@ from shapely.geometry import LineString
 from matplotlib.path import Path
 import matplotlib.pyplot as plt
 from python_tsp.heuristics import solve_tsp_simulated_annealing
+import math
+import random
 
 #function for checking if two circles overlap
 def check_overlap_circle(O1,O2,r):
+    """
+    A function which inputs two circle center locations [x,y] and detects whether they intersect
+    """
     
     if (min([0,(O1[0] - O2[0])**2 + (O1[1] - O2[1])**2 - 4*r**2]) == 0):
         
@@ -19,12 +24,18 @@ def check_overlap_circle(O1,O2,r):
 
 
 def construct_q_list(vertex_mat, inside_point, r):
+    """
+    a function which takes in a list of vertices and finds a list of inside (q) points that create
+    a contour in which a circle of size r can always be placed without intersecting the original polygon boundaries.
+    """
     num_pts = len(vertex_mat) - 1
     q_mat = np.zeros((num_pts, 2))
 
+    #we feed in a point that is already inside the contour to help with line intersect detection
+    #later this point is replaced with the previous q point which is guaranteed to be inside the shape.
     last_q = inside_point
     last_vertex = vertex_mat[-2]
-
+    
     for i in range(num_pts):
         next_q = find_q_point(last_vertex, vertex_mat[i], vertex_mat[i + 1], last_q, r)
         q_mat[i] = next_q
@@ -34,8 +45,18 @@ def construct_q_list(vertex_mat, inside_point, r):
     return q_mat
 
 def find_q_point(P0, P1, P2, Pq0, r):
-    # Assuming find_bisector, check_line_intersect, and circle_line_intersect are defined elsewhere
+    """
+    Find the next inside vertex using a corner of the original polygon and a known inside point
+    
+    """
+    #inside point will be on the bisector line of the corner
     offset_vector = find_bisector(P0, P1, P2, Pq0)
+    
+    #the following code checks all ways to place a q point on a vertex. There are 2 ways to place a point per
+    #bisector vector at a corner and there are 2 bisector vectors per corner. The find_bisector function will 
+    #always return the correct bisector because of internal checksIf a line is drawn from the last
+    #q point to the new point and it intersects with one of the corner lines, then it must be outside the contour, similarly
+    #the circle placed cannot intersect with one of the boundary vertices. The 2 extra cases checked are for if the vertex is convex.
 
     # Try concave options first
     candidate_pq = P1 + r * offset_vector
@@ -51,6 +72,7 @@ def find_q_point(P0, P1, P2, Pq0, r):
         return candidate_pq
 
     # Handle convex vertex
+    # Different geometry is required to figure out the correct offset for a convex vertex (it is not just the radius)
     l_a = np.linalg.norm(P1 - P2)
     l_b = np.linalg.norm(P1 - P0)
     l_c = np.linalg.norm(P0 - P2)
@@ -69,6 +91,10 @@ def find_q_point(P0, P1, P2, Pq0, r):
 
 
 def circle_line_intersect(lx1, ly1, lx2, ly2, cx, cy, r):
+    """
+    Check if a circle and a line segment intersect
+    
+    """
     # Handle the special case of a vertical line
     if lx2 == lx1:
         slope = float('inf')
@@ -103,6 +129,9 @@ def circle_line_intersect(lx1, ly1, lx2, ly2, cx, cy, r):
     return 0
 
 def check_line_intersect(l1x1, l1y1, l1x2, l1y2, l2x1, l2y1, l2x2, l2y2):
+    """
+    Check if 2 lines intersect.
+    """
     line1 = LineString([(l1x1, l1y1), (l1x2, l1y2)])
     line2 = LineString([(l2x1, l2y1), (l2x2, l2y2)])
 
@@ -113,9 +142,11 @@ def check_line_intersect(l1x1, l1y1, l1x2, l1y2, l2x1, l2y1, l2x2, l2y2):
         return 0
 
 def find_bisector(P0, P1, P2, Pq0):
-    # Function to check line intersection, assumed to be defined elsewhere
-    # def check_line_intersect(x1, y1, x2, y2, x3, y3, x4, y4):
-    #     ...
+    """
+    This function finds the bisector of an angle. Two bisectors technically exist for every two line intersections.
+    Using an internal point it always ensures that the correct bisector is found.
+    
+    """
 
     bisector_slope = np.tan(0.5 * (np.arctan2((P2[1] - P1[1]), (P2[0] - P1[0])) + np.arctan2((P0[1] - P1[1]), (P0[0] - P1[0]))))
     offset_vector = np.array([1, bisector_slope])
@@ -139,6 +170,9 @@ def find_bisector(P0, P1, P2, Pq0):
     return None
 
 def place_circles(boundary_mat, radius, P_start, div_num):
+    """
+    Use Depth first search to place circles in the q boundary.
+    """
     center_list = [P_start]
     queue = [0]
     angular_step = 2 * np.pi / div_num
@@ -150,10 +184,8 @@ def place_circles(boundary_mat, radius, P_start, div_num):
                 main_center[0] + 2 * radius * np.cos(np.pi - angular_step * i),
                 main_center[1] + 2 * radius * np.sin(np.pi - angular_step * i)
             ]
-            #print(f"point is in region {check_point_inregion(cand_pt, boundary_mat)}")
 
-            #print(f"point overlaps {check_all_overlap(center_list, cand_pt, radius)}")
-
+            #only place a circle if the point is within the correct region and does not overlap another circle.
             if check_point_inregion(cand_pt, boundary_mat) and not check_all_overlap(center_list, cand_pt, radius):
                 #print(center_list)
                 center_list.append(cand_pt)
@@ -167,6 +199,9 @@ def place_circles(boundary_mat, radius, P_start, div_num):
     return np.array(center_list)
 
 def place_circles_bfs(boundary_mat, radius, P_start, div_num):
+    """
+    A BFS implementation of the circle placer.
+    """
     center_list = [P_start]
     queue = [0]
     angular_step = 2 * np.pi / div_num
@@ -178,10 +213,7 @@ def place_circles_bfs(boundary_mat, radius, P_start, div_num):
                 main_center[0] + 2 * radius * np.cos(np.pi - angular_step * i),
                 main_center[1] + 2 * radius * np.sin(np.pi - angular_step * i)
             ]
-            #print(f"point is in region {check_point_inregion(cand_pt, boundary_mat)}")
-
-            #print(f"point overlaps {check_all_overlap(center_list, cand_pt, radius)}")
-
+            #only place a circle if the point is within the correct region and does not overlap another circle.
             if check_point_inregion(cand_pt, boundary_mat) and not check_all_overlap(center_list, cand_pt, radius):
                 #print(center_list)
                 center_list.append(cand_pt)
@@ -195,30 +227,9 @@ def place_circles_bfs(boundary_mat, radius, P_start, div_num):
     return np.array(center_list)
 
 def check_point_inregion(Point, vertex_mat):
-    """M = len(vertex_mat) - 1
-    x0, y0 = Point
-    total_sum = 0
-    
-    for m in range(M):
-        xqm, yqm = vertex_mat[m]
-        xqm1, yqm1 = vertex_mat[m + 1]
-        dot_product = (xqm - x0) * (xqm1 - x0) + (yqm - y0) * (yqm1 - y0)
-        norm_product = np.sqrt((xqm - x0)**2 + (yqm - y0)**2) * np.sqrt((xqm1 - x0)**2 + (yqm1 - y0)**2)
-        
-        # Use arccos safely, prevent domain errors due to floating point arithmetic
-        cosine_angle = np.clip(dot_product / norm_product, -1, 1)
-        subres = np.arccos(cosine_angle)
-        
-        # Calculate the sign for the angle sum
-        sign_factor = np.sign((xqm - x0) * (yqm1 - y0) - (xqm1 - x0) * (yqm - y0))
-        
-        total_sum += subres * sign_factor
-
-    # Check if the total sum of angles is approximately 2*pi
-    if np.isclose(total_sum, 2 * np.pi, atol=1e-7):
-        return 1
-    else:
-        return 0"""
+    """
+    Check if a point lies within a closed region.    
+    """
     
     path = Path(vertex_mat)
     
@@ -231,23 +242,24 @@ def check_all_overlap(center_list, circ_cand, radius):
             return 1
     return 0
 
-
-import numpy as np
-import math
-import random
-
 def calculate_total_distance(points, order):
-    """Calculate the total distance of the path described by the given order of points."""
+    """
+    Calculate the total distance of the path described by the given order of points.
+    """
     return sum(np.linalg.norm(np.array(points[order[i - 1]]) - np.array(points[order[i]])) for i in range(len(order)))
 
 def swap_two_cities(order):
-    """Swap two cities in the order, excluding the first city."""
+    """
+    Swap two cities in the order, excluding the first city. Not swapping the first city ensures the robot startpoint is unchanged.
+    """
     idx1, idx2 = random.sample(range(1, len(order)), 2)  # Exclude the first city from swapping
     order[idx1], order[idx2] = order[idx2], order[idx1]
     return order
 
 def simulated_annealing(points, temperature=10000, cooling_rate=0.99, stopping_temperature=1e-8, stopping_iter=10000):
-    """Perform the simulated annealing algorithm."""
+    """
+    Perform the simulated annealing algorithm to solve the traveling salesman problem
+    """
     current_order = list(range(len(points)))
     best_order = current_order[:]
     current_distance = calculate_total_distance(points, current_order)
@@ -278,6 +290,9 @@ def simulated_annealing(points, temperature=10000, cooling_rate=0.99, stopping_t
     return best_order, best_distance
 
 def plot_best_path(points, best_order):
+    """
+    A plotting helper function for the TSP solver. Deprecated.
+    """
     # Reorder the points according to the best order
     ordered_points = [points[i] for i in best_order]
 
@@ -323,34 +338,16 @@ def create_distance_matrix(points):
 
     return distance_matrix
 
-"""# Example usage
-points = [(0, 0), (1, 2), (3, 4), (6, 8)]  # Replace with your points
-distance_matrix = create_distance_matrix(points)
-print(distance_matrix)
-"""
 
 def get_waypoint_list(boundary_vertices,r):
     """
-    Path plan a route through a known closed area using circle packing
+    Path plan a route through a known closed area using circle packing. 
+    The function that actually runs on the robot.
 
     r = radius to pack
-    boundary_vertices = numpy array full of x,y pairs
-    
-    
+    boundary_vertices = numpy array full of x,y pairs representing a closed boundary.
     """
     
-    
-    """boundary_vertices = np.array([
-    [0, 0],
-    [1, 8],
-    [0, 10],
-    [2, 12],
-    [6, 7],
-    [4, 3],
-    [10, 2],
-    [6, 0],
-    [0, 0]
-    ])"""
 
     inside_pt = np.array([1, 1.2])
     #r = .4

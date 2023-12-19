@@ -3,7 +3,6 @@
 ## Navigation
 
 - [Home](index.md): Overview
-- [Team](team.md): Our Team
 - [Path Planning](path-planning.md): Novel Exploration Heuristic
 - [Computer Vision](computer-vision.md): NeRF implementation and image
   comparison details
@@ -71,3 +70,36 @@ enforceable.
       between images.
     - **Comparison Stretch:** Some implementation of blur detection and removal
       from low data regions in a NeRF has been started.
+
+## Milestone 2
+
+- **Goal:** Encode a scene with a NeRF
+
+  - **Status:** Completed
+
+- **Goal:** Drive the Turtlebot while collecting odometry data from it
+
+  - **Status:** Completed
+
+- **Goal:** Use pose data from the odometry to create a Camera to World
+  transform
+
+  - **Status:** Completed
+
+- **Goal:** Use the transform to retrieve an image from the NeRF
+
+  - **Status:** Partially Complete
+  - **Note:** The transform does not perfectly correspond between the NeRF and
+    the Turtlebot and needs to be changed.
+
+- **Goal:** Compare a NeRF to an actual image
+
+  - **Status:** Partially Complete
+  - **Note:** The NeRF pipeline works with the image comparison code, but
+    because the poses do not match up, meaningful comparison cannot be
+    completed.
+
+- **Goal:** Pathplan an arbitrary space using the heuristic algorithm
+  - **Status:** Partially Complete
+  - **Note:** The circle packing algorithm works but the traveling salesman
+    solver requires debugging.
