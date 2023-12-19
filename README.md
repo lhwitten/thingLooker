@@ -521,7 +521,7 @@ approach, ensuring that we do not detect regions of low difference. We decided
 to use the SSIM approach to visualize the differences between NeRFs and camera
 images while we found the sentence transformer approach to be better for
 detecting the differences themselves as it is more robust to rotation and
-shifting.
+shifting. The script we use to do this is **compare_images.py**.
 
 ### Steps
 
@@ -533,11 +533,19 @@ shifting.
       - Threshold Difference regions
       - visualize differences
 
+  ### Usage
+
+
+## Manipulate the Odometry / Pose Data so it is Interpretable by the NeRF
+
+### Overview
+
 Odometry data is sent by the turtlebot as a quaternion orientation and an x,y,z
 coordinate - bundled together as a pose. NeRF forward pass input and training
 protocol require that this orientation and position data be formatted in 4x4 or
 3x4 matrix containing the combined rotation matrix using euler angles from 3
-axes and a column vector containing the translational information.
+axes and a column vector containing the translational information. The script we
+use to do this is **angle_helpers.py**.
 
 ### Steps
 
