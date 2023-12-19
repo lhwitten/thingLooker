@@ -4,4 +4,4 @@
 - [Path Planning](path-planning.md): Novel Exploration Heuristic
 - [Computer Vision](computer-vision.md): NeRF implementation and image
   comparison details
-- [Milestones and Ethics Statement](milestones-and-ethics-statement.md):
+- [Milestones and Ethics Statement](milestones.md):
