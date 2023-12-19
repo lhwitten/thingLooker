@@ -362,7 +362,12 @@ The explore.py script generates an RGBA image from the NeRF that should correspo
 
 ### Steps
 
-* 
+* Use callbacks to get live image from ROS and the live camera pose
+*  Convert the ROS image to an OpenCV image
+*  Generate camera to world transform
+*  Call image compare function
+*  Get NeRF Image
+*  Call function that compares live feed to NeRF image
 
 ### Usage 
 We run this script to do our actual image comparison. It puts all of the pieces together. Once the NeRF output and the live image are in the same coordinate frame, with the same origin, it should work. 
@@ -421,6 +426,7 @@ class position_knower(Node):
                 cv2.waitKey(1)
             except CvBridgeError as e:
                 print(e)
+            # Generate camera to world transform
             c2w_mat = Rt_mat_from_quaternion(self.orientation.x,self.orientation.y,self.orientation.z,self.orientation.w,self.xpos,self.ypos,self.zpos)
             self.image_compare(c2w_mat)
             # Save the image
