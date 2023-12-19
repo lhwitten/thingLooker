@@ -68,22 +68,12 @@ def compare_images_DenseV(img1,img2):
     model = SentenceTransformer('clip-ViT-B-32')
 
     # Next we compute the embeddings
-    # To encode an image, you can use the following code:
-    # from PIL import Image
-    # encoded_image = model.encode(Image.open(filepath))
-    #image_names = list(glob.glob('./*.jpg'))
-    #print("Images:", len(image_names))
     encoded_images = model.encode([img1,img2], batch_size=128, convert_to_tensor=True, show_progress_bar=True)
 
     # Now we run the clustering algorithm. This function compares images aganist 
     # all other images and returns a list with the pairs that have the highest 
     # cosine similarity score
     processed_images = util.paraphrase_mining_embeddings(encoded_images)
-    #NUM_SIMILAR_IMAGES = 2
-
-    # =================
-    # DUPLICATES
-    # =================
     print('Finding duplicate images...')
     # Filter list for duplicates. Results are triplets (score, image_id1, image_id2) and is scorted in decreasing order
     # A duplicate image will have a score of 1.00
@@ -113,13 +103,6 @@ def get_camera():
         # Capture the video frame 
         # by frame 
         ret, frame = vid.read() 
-    
-        # Display the resulting frame 
-        #cv2.imshow('frame', frame) 
-        
-        # the 'q' button is set as the 
-        # quitting button you may use any 
-        # desired button of your choice 
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord('q'): 
@@ -262,7 +245,6 @@ def resize_image(img, size):
     :param output_path: Path to save the resized image.
     :param size: A tuple (width, height) for the target size.
     """
-    #img = cv2.imread(input_path)
     resized_img = cv2.resize(img, size, interpolation=cv2.INTER_AREA)
 
     return resized_img
