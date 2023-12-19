@@ -8,20 +8,23 @@ def euler_from_quaternion(x, y, z, w):
         pitch is rotation around y in radians (counterclockwise)
         yaw is rotation around z in radians (counterclockwise)
     """
+    # Calculate roll (x-axis rotation)
     t0 = +2.0 * (w * x + y * z)
     t1 = +1.0 - 2.0 * (x * x + y * y)
     roll_x = math.atan2(t0, t1)
 
+    # Calculate pitch (y-axis rotation)
     t2 = +2.0 * (w * y - z * x)
     t2 = +1.0 if t2 > +1.0 else t2
     t2 = -1.0 if t2 < -1.0 else t2
     pitch_y = math.asin(t2)
      
+    # Calculate yaw (z-axis rotation)
     t3 = +2.0 * (w * z + x * y)
     t4 = +1.0 - 2.0 * (y * y + z * z)
     yaw_z = math.atan2(t3, t4)
      
-    return roll_x, pitch_y, yaw_z # in radians
+    return roll_x, pitch_y, yaw_z # Returns the Euler angles in radians
 
 def Rt_mat_from_quaternion(x,y,z,w,xpos,ypos,zpos):
     """
@@ -33,6 +36,7 @@ def Rt_mat_from_quaternion(x,y,z,w,xpos,ypos,zpos):
 
     roll, pitch, yaw = euler_from_quaternion(x, y, z, w)
 
+    # Compute rotation matrices for each Euler angle
     Rz_yaw = np.array([
         [math.cos(yaw), -math.sin(yaw), 0],
         [math.sin(yaw),  math.cos(yaw), 0],
@@ -52,6 +56,7 @@ def Rt_mat_from_quaternion(x,y,z,w,xpos,ypos,zpos):
     ])
 
     # The rotation matrix is the product of individual rotation matrices
+    # Combine the rotation matrices and add the translation vector
     R = np.dot(Rz_yaw, np.dot(Ry_pitch, Rx_roll))
     R = np.hstack([R, np.array([[xpos], [ypos], [zpos]])])
 
@@ -66,7 +71,8 @@ def Rt_mat_from_quaternion_44(x,y,z,w,xpos,ypos,zpos):
     """
 
     roll, pitch, yaw = euler_from_quaternion(x, y, z, w)
-
+    # Compute rotation matrices for each Euler angle
+    # Same as in Rt_mat_from_quaternion function
     Rz_yaw = np.array([
         [math.cos(yaw), -math.sin(yaw), 0],
         [math.sin(yaw),  math.cos(yaw), 0],
@@ -106,7 +112,8 @@ def quaternion_from_euler(roll, pitch, yaw):
     sp = math.sin(pitch * 0.5)
     cr = math.cos(roll * 0.5)
     sr = math.sin(roll * 0.5)
-
+    
+    # Compute quaternion components
     q = [0] * 4
     q[0] = cy * cp * sr - sy * sp * cr
     q[1] = sy * cp * sr + cy * sp * cr
