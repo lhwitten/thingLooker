@@ -23,6 +23,42 @@ All in all, we're pretty proud of what we were able to do, especially in the fac
 
 ## Setup - Nerfstudio + ROS
 
+Our architecture consists of two repos because we blend two very different software tools: nerfstudio and ROS. Nerfstudio runs in a conda environment while ROS runs at the system level. Ros involves packages and buidling and sourcing and a system python version whereas nerfstudio does not. Therefore, we had to be clever about integrating the two technologies so we could take the data recieved from ROS and use it to get nerf output, which would then be used by the ROS node again for further use. Specifically, we had to run a subprocess in our main **explore.py** script to run a bash script that would activate the nerfstudio conda environment and then run the load_model script to do the forward pass through the NeRF Network. We had to do this because ROS does not play nice with conda environments. 
+
+## Code Architecture
+
+Our code architecture consists of the following scripts:
+
+* **explore.py** is our main script, that does the nerf comparison.
+* **explore.py** calls **angle_helpers.py** to turn the odometry/pose data it recieves into a format that the NeRF can take as input. The NeRF uses a pose as input to generate the corresponding image in the encoded scene.
+* The format it takes as input is a 3x4 transformation matrix:
+```python
+# [+X0 +Y0 +Z0 X]
+# [+X1 +Y1 +Z1 Y]
+# [+X2 +Y2 +Z2 Z]
+# [0.0 0.0 0.0 1] (this row is assumed in the forward pass)
+```
+* A prerequisite to running explore is acquiring data to train the NeRF. We use the script **get_nerf_data.py** to get the **transforms.json** file used to train the NeRF.
+* We then use nerfstudio's ns-train CL command pointing to the **transforms.json** file to train the NeRF:
+```
+conda activate nerfstudio3
+ns-train nerfacto --data /path/to/transforms.json
+```
+* In **explore.py**, we run another script, **load_model.py**, as a subprocess. The script runs a forward pass through the NeRF and produces a 2D RGBA image as output. The RGBA image is written to memory.
+* To run  **load_model.py**, first the subprocess runs **run_load_model.sh** because the nerfstudio conda environment has to be activated before the NeRF model can be loaded. But, the nerfstudio conda environment cannot be
+active while the ROS node is run at first, hence the need for the subprocess approach that will close the environment upon termination. 
+* Then, that rgba image is loaded by **explore.py** and then image comparison is done using functions housed in the **compare_images.py** script.
+* To get data from the iPhone we use as our camera, we used **arkit_data_streamer**, an external repository. To activate the stream, we had to open the app on the iPhone and start streaming the data. Both the iPhone and the laptop running the **explore.py** script have to be on the same WiFi network, specifically the Olin Robotics WiFi network. We also had to launch the arkit server to stream data from the phone to ROS topics that the computer could subscribe to:
+
+```shell
+(base) jess@jess-Precision-5770:~/ros2_ws$ ros2 launch arkit_data_streamer launch_data_servers.py
+```
+
+So, all in all, this project requires 3 repositories to run:
+
+* A modified version of nerfstudio (with the proprietary **load_model.py** script added to the models directory)
+* The arkit_data_streamer repository, housed in a ros2_ws directory. This manages the pose and camera data recieved from the iPhone
+* The thingLooker repository, housed in the ros2_ws directory as well. This has all of the code related to converting the data into the right formats, generating nerf data, generating output from the nerf, and finally, doing the comparison between the live feed and the corresponding encoded scene image from the NeRF. 
 
 # The Pieces
 The next sections will describe the code and use-case for each component of the project. We decided to separate them because they stand-alone as projects in addition to contributing to the overarching goal. 
@@ -212,15 +248,72 @@ Here is what the image directory looks like:
 
 ## Simulate a circle packing exploration heuristic
 
-## Creat a script that could run a forward pass through a nerf outside of the nerfstudio scaffolding
+See [this]() page to learn more. 
+
+## Creat a script that could run a forward pass through a NeRF outside of the nerfstudio scaffolding
+
+### Overview
+
+We wrote a script that given a pose and a nerf config file, would run a forward pass through the NeRF. There was no infrastructure to do this easily in NeRFStudio so we created it outselves by loading
+our config as a model instance and then performing inference using the pose as input. Also something to note is that load_model.py, the script that performs the described functionality, lives inside the nerfstudio repo to make imports easier, not the thingLooker repo. The script is run as a subprocess in our explore.py file, which actually does our image comparison. Explore is our main script. 
+
+### Steps
+
+
+
+### Usage 
+
+### Implementation 
+
+### Output
 
 ## Compare live feed to the inference from the forward pass 
 
+### Overview
+
+### Steps
+
+### Usage 
+
+### Implementation 
+
+### Output
+
 ## Create a script that will spot the difference between two images (specifically one from the live feed and one from the forward pass) 
+
+### Overview
+
+### Steps
+
+### Usage 
+
+### Implementation 
+
+### Output
 
 ## Use turtlebots odometry to generate nerf output
 
+### Overview
+
+### Steps
+
+### Usage 
+
+### Implementation 
+
+### Output
+
 ## Compare live images and nerf output that correspond to the same pose (meaning they are a picture taken from the same place and therefore will be comparable for spot the difference)
+
+### Overview
+
+### Steps
+
+### Usage 
+
+### Implementation 
+
+### Output
 
 
 [![N|Solid](https://cldup.com/dTxpPi9lDf.thumb.png)](https://nodesource.com/products/nsolid)
