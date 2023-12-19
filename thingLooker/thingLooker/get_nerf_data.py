@@ -15,6 +15,9 @@ def wait_for_save_command(node):
 
 class data_grabber(Node):
     def __init__(self):
+        """
+        Initialize the data_grabber node, setting up subscriptions, variables, and a timer.
+        """
         super().__init__('data_grabber')  # Initializes the node
         self.bridge = CvBridge()  # Creates a bridge between ROS and CV image formats
         self.shutdown_flag = False  # Flag to indicate shutdown
@@ -47,6 +50,12 @@ class data_grabber(Node):
         self.timer = self.create_timer(2.0, self.run_loop)  # Timer for periodic task execution
 
     def run_loop(self):
+        """
+        Processe and saves each received image periodically.
+
+        Convert ROS images to OpenCV format, performs rotations, and saves them.
+        Also updates the JSON structure with transformation data.
+        """
         # Processes images if available
         if self.image:
             try:
@@ -72,6 +81,14 @@ class data_grabber(Node):
         self.save_json_to_file()
 
     def get_odom(self, odom_data):
+        """
+        Callback function for receiving pose data.
+
+        Args:
+            odom_data (PoseStamped): The incoming odometry data containing position and orientation.
+        
+        Updates the node's position (xpos, ypos, zpos) and orientation based on odometry data.
+        """
         # Updates position and orientation from odometry data
         self.xpos, self.ypos, self.zpos = (
             odom_data.pose.position.x, 
@@ -85,9 +102,20 @@ class data_grabber(Node):
         )
 
     def callback(self, image_data):
+        """
+        Callback function for receiving image data from the camera.
+
+        Args:
+            image_data (CompressedImage): The incoming image data from the camera.
+        
+        Updates the current image for further processing.
+        """
         self.image = image_data  # Updates current image with incoming data
 
     def save_json_to_file(self):
+        """
+        Save json dictionary as json file using json.dump.
+        """
         # Saves JSON data to a file
         with open('/home/jess/ros2_ws/transforms.json', 'w') as outfile:
             json.dump(self.json, outfile, indent=4)

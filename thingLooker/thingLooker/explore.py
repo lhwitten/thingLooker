@@ -12,34 +12,43 @@ from .compare_images import *
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import CompressedImage
 
-##robot knows where it is
+
 class position_knower(Node):
     def __init__(self):
-            super().__init__('position_knower')
-            self.bridge = CvBridge()
-            self.shutdown_flag = False
-            # This is the subscriber for the iPhone camera feed
-            self.create_subscription(CompressedImage, 'camera/image_raw/compressed',self.callback,10)
-            # This is the pose of the iPhone camera
-            self.create_subscription(PoseStamped, 'device_pose', self.get_odom, 10)
-            self.last_cam = None
-            self.image = None
-            self.xpos = 0.0
-            self.ypos = 0.0
-            self.zpos = 0.0
-            self.theta = 0.0
-            self.cam_phi = np.pi/16
-            self.xpos_b = 0.0
-            self.ypos_b = 0.0
-            self.orientation = Quaternion()
-            self.wait = False
-            self.w_count = 0
-            self.target_size = None
-            self.counter = 0
-            self.json = {"camera_model":"OPENCV","fl_x":506.65,"fl_y":507.138,"cx":383.64,"cy":212.61,"w":768,"h":432,"k1":-0.0329,"k2":0.058,"p1":0.000255,"p2":0.0,"aabb_scale":16,"frames":[]}
-            self.timer = self.create_timer(2.0, self.run_loop)
+        """
+        Initialize the position_knower node, setting up subscriptions, variables, and a timer.
+        """
+        super().__init__('position_knower')
+        self.bridge = CvBridge()
+        self.shutdown_flag = False
+        # This is the subscriber for the iPhone camera feed
+        self.create_subscription(CompressedImage, 'camera/image_raw/compressed',self.callback,10)
+        # This is the pose of the iPhone camera
+        self.create_subscription(PoseStamped, 'device_pose', self.get_odom, 10)
+        self.last_cam = None
+        self.image = None
+        self.xpos = 0.0
+        self.ypos = 0.0
+        self.zpos = 0.0
+        self.theta = 0.0
+        self.cam_phi = np.pi/16
+        self.xpos_b = 0.0
+        self.ypos_b = 0.0
+        self.orientation = Quaternion()
+        self.wait = False
+        self.w_count = 0
+        self.target_size = None
+        self.counter = 0
+        self.json = {"camera_model":"OPENCV","fl_x":506.65,"fl_y":507.138,"cx":383.64,"cy":212.61,"w":768,"h":432,"k1":-0.0329,"k2":0.058,"p1":0.000255,"p2":0.0,"aabb_scale":16,"frames":[]}
+        self.timer = self.create_timer(2.0, self.run_loop)
 
     def run_loop(self):
+        """
+        Processe images received from the camera. Runs every two seconds.
+
+        Processe each incoming image, performs necessary transformations, and compares
+        it with generated NeRF images.
+        """
         if self.image is not None:
             try:
                 # Convert the ROS image to an OpenCV image
@@ -58,6 +67,14 @@ class position_knower(Node):
 
 
     def get_odom(self, odom_data):
+        """
+        Callback function for receiving pose data.
+
+        Args:
+            odom_data (PoseStamped): The incoming odometry data containing position and orientation.
+        
+        Update the node's position (xpos, ypos, zpos) and orientation based on odometry data.
+        """
         # Retrieve odom data/pose data from phone
         self.xpos = odom_data.pose.position.x
         self.ypos = odom_data.pose.position.y
@@ -66,15 +83,35 @@ class position_knower(Node):
         self.theta = euler_from_quaternion(self.orientation.x,self.orientation.y,self.orientation.z,self.orientation.w)
 
     def callback(self,image_data):
+        """
+        Callback function for receiving image data from the camera.
+
+        Args:
+            image_data (CompressedImage): The incoming image data from the camera.
+        
+        Updates the current image for further processing.
+        """
         # Retrieve live feed from iPhone
         self.image = image_data
 
     def save_json_to_file(self):
+        """
+        Save json dictionary as json file using json.dump.
+        """
         # Save the information in the json dictionary to an actual json file
         with open('/home/jess/ros2_ws/transforms.json', 'w') as outfile:
             json.dump(self.json, outfile, indent=4)
     
     def image_compare(self,c2w_mat):
+        """
+        Compare the current camera image with a NeRF-generated image.
+
+        Args:
+            c2w_mat (numpy.ndarray): Camera to world transformation matrix.
+        
+        Processe the current camera image and a corresponding NeRF-generated image, and compares
+        them to analyze differences.
+        """
         print(f"image in compare? {self.image is True}")
         print("NeRF image being collected")
         NeRF_img =  self.get_nerf_pic(c2w_mat)
@@ -110,6 +147,15 @@ class position_knower(Node):
     # Start the subprocess and retrieve the image from the nerf that
     # corresponds to the pose
     def get_nerf_pic(self, c2w_mat):
+        """
+        Retrieve a NeRF-generated image corresponding to the given camera to world transformation matrix.
+
+        Args:
+            c2w_mat (numpy.ndarray): Camera to world transformation matrix.
+        
+        Returns:
+            numpy.ndarray: The NeRF-generated image corresponding to the given transformation matrix.
+        """
         list_c2w_mat = c2w_mat.tolist()
         string_c2w = json.dumps(list_c2w_mat)
         process = subprocess.Popen(['/home/jess/ros2_ws/run_load_model.sh', string_c2w],
