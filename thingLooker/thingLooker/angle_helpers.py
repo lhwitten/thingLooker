@@ -24,6 +24,12 @@ def euler_from_quaternion(x, y, z, w):
     return roll_x, pitch_y, yaw_z # in radians
 
 def Rt_mat_from_quaternion(x,y,z,w,xpos,ypos,zpos):
+    """
+    Create a Camera to World matrix using an input quaternion orientation and x,y,z pose.
+
+    Output is in [R |T] format with the translation parameters in a right side 3x1 column while 
+    the combined rotation matrix is a 3x3 matrix on the left.
+    """
 
     roll, pitch, yaw = euler_from_quaternion(x, y, z, w)
 
@@ -53,6 +59,12 @@ def Rt_mat_from_quaternion(x,y,z,w,xpos,ypos,zpos):
     return R
 
 def Rt_mat_from_quaternion_44(x,y,z,w,xpos,ypos,zpos):
+    """Create a Camera to World matrix using an input quaternion orientation and x,y,z pose.
+
+    Output is in [R |T] format with the translation parameters in a right side 3x1 column while 
+    the combined rotation matrix is a 3x3 matrix on the left. The final output is multiplied by 
+    a camera transform.
+    """
 
     roll, pitch, yaw = euler_from_quaternion(x, y, z, w)
 

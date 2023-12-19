@@ -1,9 +1,3 @@
-
-
-#methods
-# - histograms
-# - features 2d
-
 from skimage.metrics import structural_similarity
 import cv2
 import numpy as np
@@ -15,7 +9,12 @@ import matplotlib.pyplot as plt
 
 import skimage
 
+
 def image_compare_SSIM(img1,img2):
+    """
+    A Basic Image comparison approach which directly compares images to find regions of difference. 
+    Thresholding is implemented so that difference finding is adjustable. Not robust to small turns.
+    """
 
     # Convert images to grayscale
     first_gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
@@ -57,6 +56,10 @@ def image_compare_SSIM(img1,img2):
     cv2.waitKey()
 
 def compare_images_DenseV(img1,img2):
+    """
+    Another image comparison implementation. This implementation uses sentence transformers to 
+    compare images and does not produce visual output but is more robust to small turns.
+    """
 
     img1 = Image.fromarray(cv2.cvtColor(img1, cv2.COLOR_BGR2RGB))
     img2 = Image.fromarray(cv2.cvtColor(img2, cv2.COLOR_BGR2RGB))
@@ -91,23 +94,11 @@ def compare_images_DenseV(img1,img2):
     #score, image_id1, image_id2 = duplicates[0]
     print("\nScore: {:.3f}%".format(score * 100))
 
-    # =================
-    # NEAR DUPLICATES
-    # =================
-    #print('Finding near duplicate images...')
-    # Use a threshold parameter to identify two images as similar. By setting the threshold lower, 
-    # you will get larger clusters which have less similar images in it. Threshold 0 - 1.00
-    # A threshold of 1.00 means the two images are exactly the same. Since we are finding near 
-    # duplicate images, we can set it at 0.99 or any number 0 < X < 1.00.
-"""    threshold = 0.99
-    near_duplicates = [image for image in processed_images if image[0] < threshold]
-
-    for score, image_id1, image_id2 in near_duplicates[0:NUM_SIMILAR_IMAGES]:
-        print("\nScore: {:.3f}%".format(score * 100))
-        print(image_names[image_id1])
-        print(image_names[image_id2])"""
 
 def get_camera():
+    """
+    A script that tests image comparison by using the laptop webcam.
+    """
 
     # define a video capture object 
     vid = cv2.VideoCapture(0) 
@@ -151,6 +142,12 @@ def get_camera():
     cv2.destroyAllWindows()
 
 def compare_and_visualize_differences(img1, img2, min_contour_area=100):
+    """
+    A Basic Image comparison approach which directly compares images to find regions of difference. 
+    Thresholding is implemented so that difference finding is adjustable. Not robust to small turns.
+
+    A version of SSIM similarity comparison with a thresholding on the minimum size of difference to detect.
+    """
     
     #img1,img2 = replace_blurry_regions(img1,img2,blur_threshold=65)
     
@@ -229,6 +226,7 @@ def detect_blurry_regions(image, threshold=100):
 def replace_blurry_regions(img1, img2, blur_threshold=100):
     """
     Detects blurry regions in both images and replaces those regions with black pixels in both images.
+    Deals with ill defined regions of a NeRF.
     """
     # Detect blurry regions in both images
     mask1 = detect_blurry_regions(img1, blur_threshold)
@@ -269,7 +267,4 @@ def resize_image(img, size):
 
     return resized_img
     
-
-#get_camera()
-
 
