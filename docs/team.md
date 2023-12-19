@@ -1,6 +1,16 @@
-# NeRF Spot The Difference
+# Meet The Team
 
-Computational Robotics Final for Jessica Brown and Luke Witten
+Jessica Brown
+
+![Alt text for the image](/images/your_image_filename.ext)
+
+safdjhasdfklsafdhlsdafl
+
+Luke Witten
+
+![Alt text for the image](/images/your_image_filename.ext)
+
+safdjhasdfklsafdhlsdafl
 
 ## Navigation
 
@@ -10,7 +20,3 @@ Computational Robotics Final for Jessica Brown and Luke Witten
 - [Computer Vision](computer-vision.md): NeRF implementation and image
   comparison details
 - [Milestones and Ethics Statement](milestones.md):
-
-## About This Project
-
-Project overview here

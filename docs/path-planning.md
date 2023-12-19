@@ -1,6 +1,4 @@
-# NeRF Spot The Difference
-
-Computational Robotics Final for Jessica Brown and Luke Witten
+# Path Planning and Automatic Exploration
 
 ## Navigation
 
@@ -10,7 +8,3 @@ Computational Robotics Final for Jessica Brown and Luke Witten
 - [Computer Vision](computer-vision.md): NeRF implementation and image
   comparison details
 - [Milestones and Ethics Statement](milestones.md):
-
-## About This Project
-
-Project overview here
