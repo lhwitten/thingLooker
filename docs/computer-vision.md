@@ -520,14 +520,14 @@ def main(args=None):
 
 ### Output
 
-## Odometry/pose data to generate nerf output (Luke add here- angle helpers)
+## Manipulate Odometry/Pose data to Generate NeRF Output
 
-### Overview
+### Angle Helper Functions Overview
 
-### Steps
+Odometry data is sent by the iPhone as a quaternion orientation and an x,y,z
+coordinate - bundled together as a pose. NeRF forward pass input and training
+protocol require that this orientation and position data be formatted in 4x4 or
+3x4 axes and a column vector containing the translational information.
 
-### Usage 
-
-### Implementation 
-
-### Output
+This camera to world matrix is used in conjunction with an image as input a NeRF
+for training as well as by itself as input to a NeRF's forward pass.
