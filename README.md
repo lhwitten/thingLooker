@@ -1,54 +1,97 @@
-# thingLooker: A Spot the Difference Application 
+# thingLooker: A Spot the Difference Application
+
 ## The Goal vs. What We Accomplished
-Our goal was to encode a scene of a NeRF at a specific point in time, then capture a live image of a spot in the scene, and then compare the nerf output to the live feed (corresponding to the same camera position in the room) to see if the scene had changed. In other words, we wanted to "spot the difference" in the place the camera captured from when the nerf was collected to the present. 
 
-Specifically, we wanted a Turtlebot to autonomously explore a space and spot the difference at certain locations. 
+Our goal was to encode a scene of a NeRF at a specific point in time, then
+capture a live image of a spot in the scene, and then compare the nerf output to
+the live feed (corresponding to the same camera position in the room) to see if
+the scene had changed. In other words, we wanted to "spot the difference" in the
+place the camera captured from when the nerf was collected to the present.
 
-We managed to do a lot, even if we didn't get it working perfectly. When we figure out how to get the coordinate frames between the nerf forward pass and the live image to be the same, we should be good to go, but unfortunately we didn't figure that out in time for finals because Jess got covid :(. 
+Specifically, we wanted a Turtlebot to autonomously explore a space and spot the
+difference at certain locations.
 
-Here is what we were able to accomplish, despite the fact that Jess had covid and she had other stuff going on: 
+We managed to do a lot, even if we didn't get it working perfectly. When we
+figure out how to get the coordinate frames between the nerf forward pass and
+the live image to be the same, we should be good to go, but unfortunately we
+didn't figure that out in time for finals because Jess got covid :(.
 
-| What we set out to do | What we did |
-| ------ | ------ |
-| Generate NeRFs with custom data / with phone or Pi | We did that! |
-| Simulate a circle packing exploration heuristic | We did that! |
-| Creat a script that could run a forward pass through a nerf outside of the nerfstudio scaffolding | We did that! And it was hard, too! |
-| Compare live feed to the inference from the forward pass | We did that! |
+Here is what we were able to accomplish, despite the fact that Jess had covid
+and she had other stuff going on:
+
+| What we set out to do                                                                                                                                                                | What we did                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| Generate NeRFs with custom data / with phone or Pi                                                                                                                                   | We did that!                       |
+| Simulate a circle packing exploration heuristic                                                                                                                                      | We did that!                       |
+| Creat a script that could run a forward pass through a nerf outside of the nerfstudio scaffolding                                                                                    | We did that! And it was hard, too! |
+| Compare live feed to the inference from the forward pass                                                                                                                             | We did that!                       |
 | Compare live images and nerf output that correspond to the same pose (meaning they are a picture taken from the same place and therefore will be comparable for spot the difference) | We're a little stuck on this part! |
-| Create a script that will spot the difference between two images (specifically one from the live feed and one from the forward pass) | We did that! |
-| Control a turtle bot | We did that! |
-| Use its odometry data to generate nerf output | We did that! |
+| Create a script that will spot the difference between two images (specifically one from the live feed and one from the forward pass)                                                 | We did that!                       |
+| Control a turtle bot                                                                                                                                                                 | We did that!                       |
+| Use its odometry data to generate nerf output                                                                                                                                        | We did that!                       |
 
-All in all, we're pretty proud of what we were able to do, especially in the face of several challenges. 
+All in all, we're pretty proud of what we were able to do, especially in the
+face of several challenges.
 
 ## Setup - Nerfstudio + ROS
 
-Our architecture consists of two repos because we blend two very different software tools: nerfstudio and ROS. Nerfstudio runs in a conda environment while ROS runs at the system level. Ros involves packages and buidling and sourcing and a system python version whereas nerfstudio does not. Therefore, we had to be clever about integrating the two technologies so we could take the data recieved from ROS and use it to get nerf output, which would then be used by the ROS node again for further use. Specifically, we had to run a subprocess in our main **explore.py** script to run a bash script that would activate the nerfstudio conda environment and then run the load_model script to do the forward pass through the NeRF Network. We had to do this because ROS does not play nice with conda environments. 
+Our architecture consists of two repos because we blend two very different
+software tools: nerfstudio and ROS. Nerfstudio runs in a conda environment while
+ROS runs at the system level. Ros involves packages and buidling and sourcing
+and a system python version whereas nerfstudio does not. Therefore, we had to be
+clever about integrating the two technologies so we could take the data recieved
+from ROS and use it to get nerf output, which would then be used by the ROS node
+again for further use. Specifically, we had to run a subprocess in our main
+**explore.py** script to run a bash script that would activate the nerfstudio
+conda environment and then run the load_model script to do the forward pass
+through the NeRF Network. We had to do this because ROS does not play nice with
+conda environments.
 
 ## Code Architecture
 
 Our code architecture consists of the following scripts:
 
-* **explore.py** is our main script, that does the nerf comparison.
-* **explore.py** calls **angle_helpers.py** to turn the odometry/pose data it recieves into a format that the NeRF can take as input. The NeRF uses a pose as input to generate the corresponding image in the encoded scene.
-* The format it takes as input is a 3x4 transformation matrix:
+- **explore.py** is our main script, that does the nerf comparison.
+- **explore.py** calls **angle_helpers.py** to turn the odometry/pose data it
+  recieves into a format that the NeRF can take as input. The NeRF uses a pose
+  as input to generate the corresponding image in the encoded scene.
+- The format it takes as input is a 3x4 transformation matrix:
+
 ```python
 # [+X0 +Y0 +Z0 X]
 # [+X1 +Y1 +Z1 Y]
 # [+X2 +Y2 +Z2 Z]
 # [0.0 0.0 0.0 1] (this row is assumed in the forward pass)
 ```
-* A prerequisite to running explore is acquiring data to train the NeRF. We use the script **get_nerf_data.py** to get the **transforms.json** file used to train the NeRF.
-* We then use nerfstudio's ns-train CL command pointing to the **transforms.json** file to train the NeRF:
+
+- A prerequisite to running explore is acquiring data to train the NeRF. We use
+  the script **get_nerf_data.py** to get the **transforms.json** file used to
+  train the NeRF.
+- We then use nerfstudio's ns-train CL command pointing to the
+  **transforms.json** file to train the NeRF:
+
 ```
 conda activate nerfstudio3
 ns-train nerfacto --data /path/to/transforms.json
 ```
-* In **explore.py**, we run another script, **load_model.py**, as a subprocess. The script runs a forward pass through the NeRF and produces a 2D RGBA image as output. The RGBA image is written to memory.
-* To run  **load_model.py**, first the subprocess runs **run_load_model.sh** because the nerfstudio conda environment has to be activated before the NeRF model can be loaded. But, the nerfstudio conda environment cannot be
-active while the ROS node is run at first, hence the need for the subprocess approach that will close the environment upon termination. 
-* Then, that rgba image is loaded by **explore.py** and then image comparison is done using functions housed in the **compare_images.py** script.
-* To get data from the iPhone we use as our camera, we used **arkit_data_streamer**, an external repository. To activate the stream, we had to open the app on the iPhone and start streaming the data. Both the iPhone and the laptop running the **explore.py** script have to be on the same WiFi network, specifically the Olin Robotics WiFi network. We also had to launch the arkit server to stream data from the phone to ROS topics that the computer could subscribe to:
+
+- In **explore.py**, we run another script, **load_model.py**, as a subprocess.
+  The script runs a forward pass through the NeRF and produces a 2D RGBA image
+  as output. The RGBA image is written to memory.
+- To run **load_model.py**, first the subprocess runs **run_load_model.sh**
+  because the nerfstudio conda environment has to be activated before the NeRF
+  model can be loaded. But, the nerfstudio conda environment cannot be active
+  while the ROS node is run at first, hence the need for the subprocess approach
+  that will close the environment upon termination.
+- Then, that rgba image is loaded by **explore.py** and then image comparison is
+  done using functions housed in the **compare_images.py** script.
+- To get data from the iPhone we use as our camera, we used
+  **arkit_data_streamer**, an external repository. To activate the stream, we
+  had to open the app on the iPhone and start streaming the data. Both the
+  iPhone and the laptop running the **explore.py** script have to be on the same
+  WiFi network, specifically the Olin Robotics WiFi network. We also had to
+  launch the arkit server to stream data from the phone to ROS topics that the
+  computer could subscribe to:
 
 ```shell
 (base) jess@jess-Precision-5770:~/ros2_ws$ ros2 launch arkit_data_streamer launch_data_servers.py
@@ -56,50 +99,74 @@ active while the ROS node is run at first, hence the need for the subprocess app
 
 So, all in all, this project requires 3 repositories to run:
 
-* A modified version of **nerfstudio** (with the proprietary **load_model.py** script added to the models directory)
-* The **arkit_data_streamer** repository, housed in a ros2_ws directory. This manages the pose and camera data recieved from the iPhone
-* The **thingLooker** repository, housed in the ros2_ws directory as well. This has all of the code related to converting the data into the right formats, generating nerf data, generating output from the nerf, and finally, doing the comparison between the live feed and the corresponding encoded scene image from the NeRF.
+- A modified version of **nerfstudio** (with the proprietary **load_model.py**
+  script added to the models directory)
+- The **arkit_data_streamer** repository, housed in a ros2_ws directory. This
+  manages the pose and camera data recieved from the iPhone
+- The **thingLooker** repository, housed in the ros2_ws directory as well. This
+  has all of the code related to converting the data into the right formats,
+  generating nerf data, generating output from the nerf, and finally, doing the
+  comparison between the live feed and the corresponding encoded scene image
+  from the NeRF.
 
-and 6 scripts: 
+and 6 scripts:
 
-* **explore.py**        (ros2ws/thingLooker)
-* **load_model.py**     (nerfstudio/models)
-* **run_load_model.sh** (ros2ws/thingLooker)
-* **compare_images.py** (ros2ws/thingLooker)
-* **get_nerf_data.py**  (ros2ws/thingLooker)
-* **angle_helpers.py**  (ros2ws/thingLooker)
+- **explore.py** (ros2ws/thingLooker)
+- **load_model.py** (nerfstudio/models)
+- **run_load_model.sh** (ros2ws/thingLooker)
+- **compare_images.py** (ros2ws/thingLooker)
+- **get_nerf_data.py** (ros2ws/thingLooker)
+- **angle_helpers.py** (ros2ws/thingLooker)
 
-and this doesn't include the autonomous exploration code. 
+and this doesn't include the autonomous exploration code.
 
 # The Pieces
-The next sections will describe the code and use-case for each component of the project. We decided to separate them because they stand-alone as projects in addition to contributing to the overarching goal. 
+
+The next sections will describe the code and use-case for each component of the
+project. We decided to separate them because they stand-alone as projects in
+addition to contributing to the overarching goal.
 
 ## Generate NeRFs with custom data / with phone or Pi
 
 ### Overview
 
-We wanted to be able to generate NeRFs using our own poses. The poses we wanted to generate NeRFs from were an iphone camera pose and the odometry data from the turtle bot. We were able to do both of these in our get_nerf_data script. 
+We wanted to be able to generate NeRFs using our own poses. The poses we wanted
+to generate NeRFs from were an iphone camera pose and the odometry data from the
+turtle bot. We were able to do both of these in our get_nerf_data script.
 
 ### Steps
-get_nerf_data does the following: 
 
-* Acquires odometry data (from the iphone right now, we had implemented the odometry data from the robot functionality but found that it didn't map to the camera's pose directly and therefore it was easier to just use the camera's pose instead. 
-* Collecs an image from the phone
-* Rotates the image 90 degrees
-* Saves the image to a file
-* Converts the raw odometry data to the 4x4 transformation matrix that nerfstudio expects their poses to be in
-* Writes the camera intrinsics, camera pose and image file path to a json file that corresponds to nerfstudio's desired format
+get_nerf_data does the following:
 
-### Usage 
+- Acquires odometry data (from the iphone right now, we had implemented the
+  odometry data from the robot functionality but found that it didn't map to the
+  camera's pose directly and therefore it was easier to just use the camera's
+  pose instead.
+- Collecs an image from the phone
+- Rotates the image 90 degrees
+- Saves the image to a file
+- Converts the raw odometry data to the 4x4 transformation matrix that
+  nerfstudio expects their poses to be in
+- Writes the camera intrinsics, camera pose and image file path to a json file
+  that corresponds to nerfstudio's desired format
 
-Essentially, the way we used this was we built the node, ran it, and then ran the ARKit app on Jess's iphone to capture images. 
-To train NeRFs, its important to capture images with significant overlap and also varied orientations and positions. We usually try to collect about 300 images, 
-but reasonable we could collect a lot more (about 2000) without running out of compute to generate even better NeRFs. We would display the images as they were collected to keep track of what was being captured and to verify that we 
-were varying camera pose and orientation. We also would open RViz2 to see whether our phone's TF was in the right place, as sometimes it would get de-calibrated and veer far from the origin. Something we still haven't figured out is when
-the origin gets designated by the ARKit app. 
+### Usage
+
+Essentially, the way we used this was we built the node, ran it, and then ran
+the ARKit app on Jess's iphone to capture images. To train NeRFs, its important
+to capture images with significant overlap and also varied orientations and
+positions. We usually try to collect about 300 images, but reasonable we could
+collect a lot more (about 2000) without running out of compute to generate even
+better NeRFs. We would display the images as they were collected to keep track
+of what was being captured and to verify that we were varying camera pose and
+orientation. We also would open RViz2 to see whether our phone's TF was in the
+right place, as sometimes it would get de-calibrated and veer far from the
+origin. Something we still haven't figured out is when the origin gets
+designated by the ARKit app.
 
 ### Implementation
-Here is the code itself: 
+
+Here is the code itself:
 
 ```python
 import rclpy  # ROS2 client library for Python
@@ -139,13 +206,13 @@ class data_grabber(Node):
         self.counter = 0  # Image counter
         # JSON structure for camera model and frames
         self.json = {
-            "camera_model": "OPENCV", 
-            "fl_x": 506.65, "fl_y": 507.138, 
-            "cx": 383.64, "cy": 212.61, 
-            "w": 768, "h": 432, 
-            "k1": -0.0329, "k2": 0.058, 
-            "p1": 0.000255, "p2": 0.0, 
-            "aabb_scale": 16, 
+            "camera_model": "OPENCV",
+            "fl_x": 506.65, "fl_y": 507.138,
+            "cx": 383.64, "cy": 212.61,
+            "w": 768, "h": 432,
+            "k1": -0.0329, "k2": 0.058,
+            "p1": 0.000255, "p2": 0.0,
+            "aabb_scale": 16,
             "frames": []
         }
         self.timer = self.create_timer(2.0, self.run_loop)  # Timer for periodic task execution
@@ -165,8 +232,8 @@ class data_grabber(Node):
             self.counter += 1
             cv2.imwrite(self.file_name, rotated_image)
             self.transform_as_list = Rt_mat_from_quaternion_44(
-                self.orientation.x, self.orientation.y, 
-                self.orientation.z, self.orientation.w, 
+                self.orientation.x, self.orientation.y,
+                self.orientation.z, self.orientation.w,
                 self.xpos, self.ypos, self.zpos
             ).tolist()
             self.frame_dict = {"file_path": self.file_name, "transform_matrix": self.transform_as_list}
@@ -178,13 +245,13 @@ class data_grabber(Node):
     def get_odom(self, odom_data):
         # Updates position and orientation from odometry data
         self.xpos, self.ypos, self.zpos = (
-            odom_data.pose.position.x, 
-            odom_data.pose.position.y, 
+            odom_data.pose.position.x,
+            odom_data.pose.position.y,
             odom_data.pose.position.z
         )
         self.orientation = odom_data.pose.orientation
         self.theta = euler_from_quaternion(
-            self.orientation.x, self.orientation.y, 
+            self.orientation.x, self.orientation.y,
             self.orientation.z, self.orientation.w
         )
 
@@ -205,9 +272,9 @@ def main(args=None):
 
 ```
 
-### Output 
+### Output
 
-Here is what the json file looks like: 
+Here is what the json file looks like:
 
 ```json
 {
@@ -255,36 +322,124 @@ Here is what the json file looks like:
         },
 ```
 
-Here is what the image directory looks like: 
+Here is what the image directory looks like:
 
 ## Simulate a circle packing exploration heuristic
 
-See [this]() page to learn more. 
+### Goal
+
+Create a heuristic algorithm which enables a robot to autonomously explore a
+known, bounded space more efficiently than conventional methods.
+
+There is a large body of work exploring how to get a robot to autonomously
+pathplan to drive over an entire space, this problem is known as coverage.
+Because we do not need our robot to stand in every location, as is the case with
+lawnmower approaches, but instead to just look at every location, we can be less
+meticulous in our movement. Because our Neural Network approach is relatively
+costly to produce images, a secondary goal is to create an algorithm which can
+view an entire space in a relatively small number of image captures.
+
+### Theory of Efficacy
+
+The initial assumption of this heuristic is that the robot in use is
+nonholonomic and utilizes a camera which is effictively one directional with
+some viewing angle. There is therefore some penalty in time in completing some
+full rotation to look at an entire scene. Note, this approach would still work
+with a 360 degree camera though traditional coverage methods may be more
+effective in that scenario. One can imagine starting at a point and packing
+cones of vision, defined by the angle of the camera and whatever effective
+distance your algorithm can make meaningful comparisons at. If one tries to
+literally pack consecutive cones then a couple issues arise, namely there are no
+algorithms for packing cones in arbitrary shapes and even if there were it would
+be incredibly time consuming to move to a certain pose and rotate to an
+orientation orientation if two packed cones are not easily reachable from each
+other. Circle packing is able to encode the process of packing cones in a
+solvable manner while allowing more flexibility for optimal pathing since a
+single circle can represent any orientation of a cone.
+
+![Circle and Cone Packing](docs/images/circle_cones_to_pack.jpg)
+
+The circles used are inscribed circles in the vision cones. It is possible to
+exactly find the radius of the inscribed circle using the angle of the vision
+cone and the radius using geometry.
+
+![Circle and Cone Packing](docs/images/circle_together.jpg)
+
+Packing circles within a space and then iterating through, viewing each circle
+in order ensures that the majority of a space is viewed by the robot.
+Additionally, because the robot must turn and move to get to the proper viewing
+distance and orientation to view a circle, more of the space than prescribed can
+be viewed and analyzed.
+
+### Implementation
+
+The steps to implement this algorithm include describing the space to explore
+geometrically using a series of vertices as well as inputting the necessary size
+circle to pack (based on the viewing angle and distance). The algorithm will
+them pack circles within the closed polygon and output a list of circle centers.
+The traveling salesman problem is then solved on these points to find a shortest
+path route between the waypoints starting at the robot start location. The
+final, ordered list of points is then iterated through with the robot PID
+navigating to an orientation and distance which view the circle center. When the
+robot is sufficiently close and oriented towards a waypoint, the next waypoint
+is chosen and navigated towards. The robot may either perform its computer
+vision tasks continuously while navigating or only while directly facing a
+waypoint.
+
+The circle packer works by a smaller area within the larger polygon where
+placing a circle will always be allowable. Once this area is found, the
+algorithm will start in a corner and place a circle. The algorithm will then use
+depth first search to place circles 2 radii away from the base circle and will
+continue until no more valid circles may be placed within a space. This approach
+works on both convex and concave polygons. The paper on this circle packing
+technique uses depth first search but we found that using breadth first search
+resulted in better circle packings. DFS is on the left while BFS is on the
+right.
+
+![Circle and Cone Packing](images/dfs_vs_bfs.png)
+
+A path created by our pathplanning algorithm.
+
+![Circle and Cone Packing](images/final_path.png)
 
 ## Creat a script that could run a forward pass through a NeRF outside of the nerfstudio scaffolding
 
 ### Overview
 
-We wrote a script that given a pose and a nerf config file, would run a forward pass through the NeRF. There was no infrastructure to do this easily in NeRFStudio so we created it outselves by loading
-our config as a model instance and then performing inference using the pose as input. Also something to note is that load_model.py, the script that performs the described functionality, lives inside the nerfstudio repo to make imports easier, not the thingLooker repo. The script is run as a subprocess in our explore.py file, which actually does our image comparison. Explore is our main script. Load_model can be found [here](https://github.com/jes-bro/nerfstudio), in our nerfstudio repo. 
+We wrote a script that given a pose and a nerf config file, would run a forward
+pass through the NeRF. There was no infrastructure to do this easily in
+NeRFStudio so we created it outselves by loading our config as a model instance
+and then performing inference using the pose as input. Also something to note is
+that load_model.py, the script that performs the described functionality, lives
+inside the nerfstudio repo to make imports easier, not the thingLooker repo. The
+script is run as a subprocess in our explore.py file, which actually does our
+image comparison. Explore is our main script. Load_model can be found
+[here](https://github.com/jes-bro/nerfstudio), in our nerfstudio repo.
 
 ### Steps
 
-* Parse the CL arguments to get transform
-* Convert transform to right format for processing
-* Call get_rgb_from_pose_transform() with config pointing to trained NeRF and pose
-* Generate camera object and camera ray bundle corresponding to pose
-* Pass that into NeRF for forward pass
-* Call model.get_rgba_image() to extract the image corresponding to the pose
-* Display the figure for verification
-* Save the image to a file
+- Parse the CL arguments to get transform
+- Convert transform to right format for processing
+- Call get_rgb_from_pose_transform() with config pointing to trained NeRF and
+  pose
+- Generate camera object and camera ray bundle corresponding to pose
+- Pass that into NeRF for forward pass
+- Call model.get_rgba_image() to extract the image corresponding to the pose
+- Display the figure for verification
+- Save the image to a file
 
 ### Usage
 
-This script is used to run a forward pass through the nerf. The function can run standalone as well. When we were testing it initially, rather than parsing CL input we just provided the input at the bottom of the script and called the get_rgba_from_pose_transform() with inputs. In our explore context, the function is called when we need a NeRF output that corresponds to the pose recieved from the iPhone through the arkit repo. 
+This script is used to run a forward pass through the nerf. The function can run
+standalone as well. When we were testing it initially, rather than parsing CL
+input we just provided the input at the bottom of the script and called the
+get_rgba_from_pose_transform() with inputs. In our explore context, the function
+is called when we need a NeRF output that corresponds to the pose recieved from
+the iPhone through the arkit repo.
 
-### Implementation 
-Here is the load_model.py implementation: 
+### Implementation
+
+Here is the load_model.py implementation:
 
 ```python
 import numpy as np
@@ -345,38 +500,54 @@ if __name__ == '__main__':
     # Save the image to a file
     plt.savefig('/home/jess/ros2_ws/output_image.png', bbox_inches='tight', pad_inches=0)
     # Turn off axes so they don't show up in the picture
-    plt.axis('off') 
+    plt.axis('off')
     # Close the plot cleanly
     plt.close()
 ```
 
 ### Output
 
-Here is sample output from the forward pass: 
+Here is sample output from the forward pass:
 
-## Compare live feed to the inference from the forward pass 
-
-### Overview
-
-### Steps
-
-### Usage 
-
-### Implementation 
-
-### Output
-
-## Create a script that will spot the difference between two images (specifically one from the live feed and one from the forward pass) 
+## Compare live feed to the inference from the forward pass
 
 ### Overview
 
 ### Steps
 
-### Usage 
+### Usage
 
-### Implementation 
+### Implementation
 
 ### Output
+
+## Create a script that will spot the difference between two images (specifically one from the live feed and one from the forward pass)
+
+### Overview
+
+We compared images from two sources, test sources included webcams, Pi cameras,
+and NeRF output. We changed the format of all images into cv2 images and then
+resized them so they could be compared against each other. We used two image
+comparison approaches, one with simple SSIM comparison which directly compares
+pixel regions on an image and another which uses sentence transformers to encode
+and then robustly compare two images together. It became apparent that image
+preprocessing was necessary, first to remove the blur from ill defined regions
+of NeRF output using laplacians and then to threshold similarity in the SSIM
+approach, ensuring that we do not detect regions of low difference. We decided
+to use the SSIM approach to visualize the differences between NeRFs and camera
+images while we found the sentence transformer approach to be better for
+detecting the differences themselves as it is more robust to rotation and
+shifting.
+
+### Steps
+
+    - input NeRF and camera image
+    - resize both images
+    - replace blurry regions
+    - `compare_images()`
+      - Convert Images to Grayscale
+      - Threshold Difference regions
+      - visualize differences
 
 ## Use turtlebots odometry to generate nerf output
 
@@ -384,9 +555,39 @@ Here is sample output from the forward pass:
 
 ### Steps
 
-### Usage 
+### Usage
 
-### Implementation 
+### Implementation
+
+### Output
+
+## Angle Helper Function
+
+### Overview
+
+Odometry data is sent by the turtlebot as a quaternion orientation and an x,y,z
+coordinate - bundled together as a pose. NeRF forward pass input and training
+protocol require that this orientation and position data be formatted in 4x4 or
+3x4 matrix containing the combined rotation matrix using euler angles from 3
+axes and a column vector containing the translational information.
+
+### Steps
+
+- Receive odometry
+- update the last recorded pose
+- Convert Quaternion to euler angles
+- construct roll, pitch, and yaw rotation matrices from euler angles
+- multiply rotation matrices together
+- append the translation column vector to the right side of the matrix
+- Optional: apply camera transformation
+- return the camera to world transformation matrix
+
+### Usage
+
+This camera to world matrix is used in conjunction with an image as input a NeRF
+for training as well as by itself as input to a NeRF's forward pass.
+
+### Implementation
 
 ### Output
 
@@ -396,12 +597,11 @@ Here is sample output from the forward pass:
 
 ### Steps
 
-### Usage 
+### Usage
 
-### Implementation 
+### Implementation
 
 ### Output
-
 
 [![N|Solid](https://cldup.com/dTxpPi9lDf.thumb.png)](https://nodesource.com/products/nsolid)
 
@@ -423,6 +623,7 @@ $ x = b $
 $$
 x = b
 
+
 $$
 
 - Import a HTML file and watch it magically convert to Markdown
@@ -432,20 +633,17 @@ $$
 - Export documents as Markdown, HTML and PDF
 
 Markdown is a lightweight markup language based on the formatting conventions
-that people naturally use in email.
-As [John Gruber] writes on the [Markdown site][df1]
+that people naturally use in email. As [John Gruber] writes on the [Markdown
+site][df1]
 
-> The overriding design goal for Markdown's
-> formatting syntax is to make it as readable
-> as possible. The idea is that a
-> Markdown-formatted document should be
-> publishable as-is, as plain text, without
-> looking like it's been marked up with tags
-> or formatting instructions.
+> The overriding design goal for Markdown's formatting syntax is to make it as
+> readable as possible. The idea is that a Markdown-formatted document should be
+> publishable as-is, as plain text, without looking like it's been marked up
+> with tags or formatting instructions.
 
-This text you see here is *actually- written in Markdown! To get a feel
-for Markdown's syntax, type some text into the left window and
-watch the results in the right.
+This text you see here is \*actually- written in Markdown! To get a feel for
+Markdown's syntax, type some text into the left window and watch the results in
+the right.
 
 ## Tech
 
@@ -458,12 +656,12 @@ Dillinger uses a number of open source projects to work properly:
 - [node.js] - evented I/O for the backend
 - [Express] - fast node.js network app framework [@tjholowaychuk]
 - [Gulp] - the streaming build system
-- [Breakdance](https://breakdance.github.io/breakdance/) - HTML
-to Markdown converter
+- [Breakdance](https://breakdance.github.io/breakdance/) - HTML to Markdown
+  converter
 - [jQuery] - duh
 
 And of course Dillinger itself is open source with a [public repository][dill]
- on GitHub.
+on GitHub.
 
 ## Installation
 
@@ -486,24 +684,24 @@ NODE_ENV=production node app
 
 ## Plugins
 
-Dillinger is currently extended with the following plugins.
-Instructions on how to use them in your own application are linked below.
+Dillinger is currently extended with the following plugins. Instructions on how
+to use them in your own application are linked below.
 
-| What we set out to do | What we did |
-| ------ | ------ |
-| Generate NeRFs with custom data / with phone or Pi | We did that! |
-| Simulate a circle packing exploration heuristic | We did that! |
-| Creat a script that could run a forward pass through a nerf outside of the nerfstudio scaffolding | We did that! And it was hard, too! |
-| Compare live feed to the inference from the forward pass | We did that! |
+| What we set out to do                                                                                                                                                                | What we did                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| Generate NeRFs with custom data / with phone or Pi                                                                                                                                   | We did that!                       |
+| Simulate a circle packing exploration heuristic                                                                                                                                      | We did that!                       |
+| Creat a script that could run a forward pass through a nerf outside of the nerfstudio scaffolding                                                                                    | We did that! And it was hard, too! |
+| Compare live feed to the inference from the forward pass                                                                                                                             | We did that!                       |
 | Compare live images and nerf output that correspond to the same pose (meaning they are a picture taken from the same place and therefore will be comparable for spot the difference) | We're a little stuck on this part! |
-| Create a script that will spot the difference between two images (specifically one from the live feed and one from the forward pass) | We did that! |
+| Create a script that will spot the difference between two images (specifically one from the live feed and one from the forward pass)                                                 | We did that!                       |
 
 ## Development
 
 Want to contribute? Great!
 
-Dillinger uses Gulp + Webpack for fast developing.
-Make a change in your file and instantaneously see your updates!
+Dillinger uses Gulp + Webpack for fast developing. Make a change in your file
+and instantaneously see your updates!
 
 Open your favorite Terminal and run these commands.
 
@@ -544,21 +742,20 @@ gulp build dist --prod
 Dillinger is very easy to install and deploy in a Docker container.
 
 By default, the Docker will expose port 8080, so change this within the
-Dockerfile if necessary. When ready, simply use the Dockerfile to
-build the image.
+Dockerfile if necessary. When ready, simply use the Dockerfile to build the
+image.
 
 ```sh
 cd dillinger
 docker build -t <youruser>/dillinger:${package.json.version} .
 ```
 
-This will create the dillinger image and pull in the necessary dependencies.
-Be sure to swap out `${package.json.version}` with the actual
-version of Dillinger.
+This will create the dillinger image and pull in the necessary dependencies. Be
+sure to swap out `${package.json.version}` with the actual version of Dillinger.
 
-Once done, run the Docker image and map the port to whatever you wish on
-your host. In this example, we simply map port 8000 of the host to
-port 8080 of the Docker (or whatever port was exposed in the Dockerfile):
+Once done, run the Docker image and map the port to whatever you wish on your
+host. In this example, we simply map port 8000 of the host to port 8080 of the
+Docker (or whatever port was exposed in the Dockerfile):
 
 ```sh
 docker run -d -p 8000:8080 --restart=always --cap-add=SYS_ADMIN --name=dillinger <youruser>/dillinger:${package.json.version}
@@ -566,8 +763,8 @@ docker run -d -p 8000:8080 --restart=always --cap-add=SYS_ADMIN --name=dillinger
 
 > Note: `--capt-add=SYS-ADMIN` is required for PDF rendering.
 
-Verify the deployment by navigating to your server address in
-your preferred browser.
+Verify the deployment by navigating to your server address in your preferred
+browser.
 
 ```sh
 127.0.0.1:8000
@@ -579,25 +776,31 @@ MIT
 
 **Free Software, Hell Yeah!**
 
-[//]: # (These are reference links used in the body of this note and get stripped out when the markdown processor does its job. There is no need to format nicely because it shouldn't be seen. Thanks SO - http://stackoverflow.com/questions/4823468/store-comments-in-markdown-syntax)
-
-   [dill]: <https://github.com/joemccann/dillinger>
-   [git-repo-url]: <https://github.com/joemccann/dillinger.git>
-   [john gruber]: <http://daringfireball.net>
-   [df1]: <http://daringfireball.net/projects/markdown/>
-   [markdown-it]: <https://github.com/markdown-it/markdown-it>
-   [Ace Editor]: <http://ace.ajax.org>
-   [node.js]: <http://nodejs.org>
-   [Twitter Bootstrap]: <http://twitter.github.com/bootstrap/>
-   [jQuery]: <http://jquery.com>
-   [@tjholowaychuk]: <http://twitter.com/tjholowaychuk>
-   [express]: <http://expressjs.com>
-   [AngularJS]: <http://angularjs.org>
-   [Gulp]: <http://gulpjs.com>
-
-   [PlDb]: <https://github.com/joemccann/dillinger/tree/master/plugins/dropbox/README.md>
-   [PlGh]: <https://github.com/joemccann/dillinger/tree/master/plugins/github/README.md>
-   [PlGd]: <https://github.com/joemccann/dillinger/tree/master/plugins/googledrive/README.md>
-   [PlOd]: <https://github.com/joemccann/dillinger/tree/master/plugins/onedrive/README.md>
-   [PlMe]: <https://github.com/joemccann/dillinger/tree/master/plugins/medium/README.md>
-   [PlGa]: <https://github.com/RahulHP/dillinger/blob/master/plugins/googleanalytics/README.md>
+[//]:
+  #
+  "These are reference links used in the body of this note and get stripped out when the markdown processor does its job. There is no need to format nicely because it shouldn't be seen. Thanks SO - http://stackoverflow.com/questions/4823468/store-comments-in-markdown-syntax"
+[dill]: https://github.com/joemccann/dillinger
+[git-repo-url]: https://github.com/joemccann/dillinger.git
+[john gruber]: http://daringfireball.net
+[df1]: http://daringfireball.net/projects/markdown/
+[markdown-it]: https://github.com/markdown-it/markdown-it
+[Ace Editor]: http://ace.ajax.org
+[node.js]: http://nodejs.org
+[Twitter Bootstrap]: http://twitter.github.com/bootstrap/
+[jQuery]: http://jquery.com
+[@tjholowaychuk]: http://twitter.com/tjholowaychuk
+[express]: http://expressjs.com
+[AngularJS]: http://angularjs.org
+[Gulp]: http://gulpjs.com
+[PlDb]:
+  https://github.com/joemccann/dillinger/tree/master/plugins/dropbox/README.md
+[PlGh]:
+  https://github.com/joemccann/dillinger/tree/master/plugins/github/README.md
+[PlGd]:
+  https://github.com/joemccann/dillinger/tree/master/plugins/googledrive/README.md
+[PlOd]:
+  https://github.com/joemccann/dillinger/tree/master/plugins/onedrive/README.md
+[PlMe]:
+  https://github.com/joemccann/dillinger/tree/master/plugins/medium/README.md
+[PlGa]:
+  https://github.com/RahulHP/dillinger/blob/master/plugins/googleanalytics/README.md
