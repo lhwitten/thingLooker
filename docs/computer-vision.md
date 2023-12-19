@@ -1,54 +1,103 @@
-# thingLooker: A Spot the Difference Application 
+# thingLooker: A Spot the Difference Application
+
+- [Home](index.md): Overview
+- [Path Planning](path-planning.md): Novel Exploration Heuristic
+- [Computer Vision](computer-vision.md): NeRF implementation and image
+  comparison details
+- [Milestones and Ethics Statement](milestones.md):
+
 ## The Goal vs. What We Accomplished
-Our goal was to encode a scene of a NeRF at a specific point in time, then capture a live image of a spot in the scene, and then compare the nerf output to the live feed (corresponding to the same camera position in the room) to see if the scene had changed. In other words, we wanted to "spot the difference" in the place the camera captured from when the nerf was collected to the present. 
 
-Specifically, we wanted a Turtlebot to autonomously explore a space and spot the difference at certain locations. 
+Our goal was to encode a scene of a NeRF at a specific point in time, then
+capture a live image of a spot in the scene, and then compare the nerf output to
+the live feed (corresponding to the same camera position in the room) to see if
+the scene had changed. In other words, we wanted to "spot the difference" in the
+place the camera captured from when the nerf was collected to the present.
 
-We managed to do a lot, even if we didn't get it working perfectly. When we figure out how to get the coordinate frames between the nerf forward pass and the live image to be the same, we should be good to go, but unfortunately we didn't figure that out in time for finals because Jess got covid :(. 
+Specifically, we wanted a Turtlebot to autonomously explore a space and spot the
+difference at certain locations.
 
-Here is what we were able to accomplish, despite the fact that Jess had covid and she had other stuff going on: 
+We managed to do a lot, even if we didn't get it working perfectly. When we
+figure out how to get the coordinate frames between the nerf forward pass and
+the live image to be the same, we should be good to go, but unfortunately we
+didn't figure that out in time for finals because Jess got covid :(.
 
-| What we set out to do | What we did |
-| ------ | ------ |
-| Generate NeRFs with custom data / with phone or Pi | We did that! |
-| Simulate a circle packing exploration heuristic | We did that! |
-| Creat a script that could run a forward pass through a nerf outside of the nerfstudio scaffolding | We did that! And it was hard, too! |
-| Compare live feed to the inference from the forward pass | We did that! |
+Here is what we were able to accomplish, despite the fact that Jess had covid
+and she had other stuff going on:
+
+| What we set out to do                                                                                                                                                                | What we did                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| Generate NeRFs with custom data / with phone or Pi                                                                                                                                   | We did that!                       |
+| Simulate a circle packing exploration heuristic                                                                                                                                      | We did that!                       |
+| Creat a script that could run a forward pass through a nerf outside of the nerfstudio scaffolding                                                                                    | We did that! And it was hard, too! |
+| Compare live feed to the inference from the forward pass                                                                                                                             | We did that!                       |
 | Compare live images and nerf output that correspond to the same pose (meaning they are a picture taken from the same place and therefore will be comparable for spot the difference) | We're a little stuck on this part! |
-| Create a script that will spot the difference between two images (specifically one from the live feed and one from the forward pass) | We did that! |
-| Control a turtle bot | We did that! |
-| Use its odometry data to generate nerf output | We did that! |
+| Create a script that will spot the difference between two images (specifically one from the live feed and one from the forward pass)                                                 | We did that!                       |
+| Control a turtle bot                                                                                                                                                                 | We did that!                       |
+| Use its odometry data to generate nerf output                                                                                                                                        | We did that!                       |
 
-All in all, we're pretty proud of what we were able to do, especially in the face of several challenges. 
+All in all, we're pretty proud of what we were able to do, especially in the
+face of several challenges.
 
 ## Setup - Nerfstudio + ROS
 
-Our architecture consists of two repos because we blend two very different software tools: nerfstudio and ROS. Nerfstudio runs in a conda environment while ROS runs at the system level. Ros involves packages and buidling and sourcing and a system python version whereas nerfstudio does not. Therefore, we had to be clever about integrating the two technologies so we could take the data recieved from ROS and use it to get nerf output, which would then be used by the ROS node again for further use. Specifically, we had to run a subprocess in our main **explore.py** script to run a bash script that would activate the nerfstudio conda environment and then run the load_model script to do the forward pass through the NeRF Network. We had to do this because ROS does not play nice with conda environments. 
+Our architecture consists of two repos because we blend two very different
+software tools: nerfstudio and ROS. Nerfstudio runs in a conda environment while
+ROS runs at the system level. Ros involves packages and buidling and sourcing
+and a system python version whereas nerfstudio does not. Therefore, we had to be
+clever about integrating the two technologies so we could take the data recieved
+from ROS and use it to get nerf output, which would then be used by the ROS node
+again for further use. Specifically, we had to run a subprocess in our main
+**explore.py** script to run a bash script that would activate the nerfstudio
+conda environment and then run the load_model script to do the forward pass
+through the NeRF Network. We had to do this because ROS does not play nice with
+conda environments.
 
 ## Code Architecture
 
 Our code architecture consists of the following scripts:
 
-* **explore.py** is our main script, that does the nerf comparison.
-* **explore.py** calls **angle_helpers.py** to turn the odometry/pose data it recieves into a format that the NeRF can take as input. The NeRF uses a pose as input to generate the corresponding image in the encoded scene.
-* The format it takes as input is a 3x4 transformation matrix:
+- **explore.py** is our main script, that does the nerf comparison.
+- **explore.py** calls **angle_helpers.py** to turn the odometry/pose data it
+  recieves into a format that the NeRF can take as input. The NeRF uses a pose
+  as input to generate the corresponding image in the encoded scene.
+- The format it takes as input is a 3x4 transformation matrix:
+
 ```python
 # [+X0 +Y0 +Z0 X]
 # [+X1 +Y1 +Z1 Y]
 # [+X2 +Y2 +Z2 Z]
 # [0.0 0.0 0.0 1] (this row is assumed in the forward pass)
 ```
-* A prerequisite to running explore is acquiring data to train the NeRF. We use the script **get_nerf_data.py** to get the **transforms.json** file used to train the NeRF.
-* We then use nerfstudio's ns-train CL command pointing to the **transforms.json** file to train the NeRF:
+
+- A prerequisite to running explore is acquiring data to train the NeRF. We use
+  the script **get_nerf_data.py** to get the **transforms.json** file used to
+  train the NeRF.
+- We then use nerfstudio's ns-train CL command pointing to the
+  **transforms.json** file to train the NeRF:
+
 ```
 conda activate nerfstudio3
 ns-train nerfacto --data /path/to/transforms.json
 ```
-* In **explore.py**, we run another script, **load_model.py**, as a subprocess. The script runs a forward pass through the NeRF and produces a 2D RGBA image as output. The RGBA image is written to memory.
-* To run  **load_model.py**, first the subprocess runs **run_load_model.sh** because the nerfstudio conda environment has to be activated before the NeRF model can be loaded. But, the nerfstudio conda environment cannot be
-active while the ROS node is run at first, hence the need for the subprocess approach that will close the environment upon termination. 
-* Then, that rgba image is loaded by **explore.py** and then image comparison is done using functions housed in the **compare_images.py** script.
-* To get data from the iPhone we use as our camera, we used **arkit_data_streamer**, an external repository. To activate the stream, we had to open the app on the iPhone and start streaming the data. Both the iPhone and the laptop running the **explore.py** script have to be on the same WiFi network, specifically the Olin Robotics WiFi network. We also had to launch the arkit server to stream data from the phone to ROS topics that the computer could subscribe to:
+
+- In **explore.py**, we run another script, **load_model.py**, as a subprocess.
+  The script runs a forward pass through the NeRF and produces a 2D RGBA image
+  as output. The RGBA image is written to memory.
+- To run **load_model.py**, first the subprocess runs **run_load_model.sh**
+  because the nerfstudio conda environment has to be activated before the NeRF
+  model can be loaded. But, the nerfstudio conda environment cannot be active
+  while the ROS node is run at first, hence the need for the subprocess approach
+  that will close the environment upon termination.
+- Then, that rgba image is loaded by **explore.py** and then image comparison is
+  done using functions housed in the **compare_images.py** script.
+- To get data from the iPhone we use as our camera, we used
+  **arkit_data_streamer**, an external repository. To activate the stream, we
+  had to open the app on the iPhone and start streaming the data. Both the
+  iPhone and the laptop running the **explore.py** script have to be on the same
+  WiFi network, specifically the Olin Robotics WiFi network. We also had to
+  launch the arkit server to stream data from the phone to ROS topics that the
+  computer could subscribe to:
 
 ```shell
 (base) jess@jess-Precision-5770:~/ros2_ws$ ros2 launch arkit_data_streamer launch_data_servers.py
@@ -56,50 +105,74 @@ active while the ROS node is run at first, hence the need for the subprocess app
 
 So, all in all, this project requires 3 repositories to run:
 
-* A modified version of **nerfstudio** (with the proprietary **load_model.py** script added to the models directory)
-* The **arkit_data_streamer** repository, housed in a ros2_ws directory. This manages the pose and camera data recieved from the iPhone
-* The **thingLooker** repository, housed in the ros2_ws directory as well. This has all of the code related to converting the data into the right formats, generating nerf data, generating output from the nerf, and finally, doing the comparison between the live feed and the corresponding encoded scene image from the NeRF.
+- A modified version of **nerfstudio** (with the proprietary **load_model.py**
+  script added to the models directory)
+- The **arkit_data_streamer** repository, housed in a ros2_ws directory. This
+  manages the pose and camera data recieved from the iPhone
+- The **thingLooker** repository, housed in the ros2_ws directory as well. This
+  has all of the code related to converting the data into the right formats,
+  generating nerf data, generating output from the nerf, and finally, doing the
+  comparison between the live feed and the corresponding encoded scene image
+  from the NeRF.
 
-and 6 scripts: 
+and 6 scripts:
 
-* **explore.py**        (ros2ws/thingLooker)
-* **load_model.py**     (nerfstudio/models)
-* **run_load_model.sh** (ros2ws/thingLooker)
-* **compare_images.py** (ros2ws/thingLooker)
-* **get_nerf_data.py**  (ros2ws/thingLooker)
-* **angle_helpers.py**  (ros2ws/thingLooker)
+- **explore.py** (ros2ws/thingLooker)
+- **load_model.py** (nerfstudio/models)
+- **run_load_model.sh** (ros2ws/thingLooker)
+- **compare_images.py** (ros2ws/thingLooker)
+- **get_nerf_data.py** (ros2ws/thingLooker)
+- **angle_helpers.py** (ros2ws/thingLooker)
 
-and this doesn't include the autonomous exploration code. 
+and this doesn't include the autonomous exploration code.
 
 # The Pieces
-The next sections will describe the code and use-case for each component of the project. We decided to separate them because they stand-alone as projects in addition to contributing to the overarching goal. 
+
+The next sections will describe the code and use-case for each component of the
+project. We decided to separate them because they stand-alone as projects in
+addition to contributing to the overarching goal.
 
 ## Generate NeRFs with custom data / with phone or Pi
 
 ### Overview
 
-We wanted to be able to generate NeRFs using our own poses. The poses we wanted to generate NeRFs from were an iphone camera pose and the odometry data from the turtle bot. We were able to do both of these in our get_nerf_data script. 
+We wanted to be able to generate NeRFs using our own poses. The poses we wanted
+to generate NeRFs from were an iphone camera pose and the odometry data from the
+turtle bot. We were able to do both of these in our get_nerf_data script.
 
 ### Steps
-get_nerf_data does the following: 
 
-* Acquires odometry data (from the iphone right now, we had implemented the odometry data from the robot functionality but found that it didn't map to the camera's pose directly and therefore it was easier to just use the camera's pose instead. 
-* Collecs an image from the phone
-* Rotates the image 90 degrees
-* Saves the image to a file
-* Converts the raw odometry data to the 4x4 transformation matrix that nerfstudio expects their poses to be in
-* Writes the camera intrinsics, camera pose and image file path to a json file that corresponds to nerfstudio's desired format
+get_nerf_data does the following:
 
-### Usage 
+- Acquires odometry data (from the iphone right now, we had implemented the
+  odometry data from the robot functionality but found that it didn't map to the
+  camera's pose directly and therefore it was easier to just use the camera's
+  pose instead.
+- Collecs an image from the phone
+- Rotates the image 90 degrees
+- Saves the image to a file
+- Converts the raw odometry data to the 4x4 transformation matrix that
+  nerfstudio expects their poses to be in
+- Writes the camera intrinsics, camera pose and image file path to a json file
+  that corresponds to nerfstudio's desired format
 
-Essentially, the way we used this was we built the node, ran it, and then ran the ARKit app on Jess's iphone to capture images. 
-To train NeRFs, its important to capture images with significant overlap and also varied orientations and positions. We usually try to collect about 300 images, 
-but reasonable we could collect a lot more (about 2000) without running out of compute to generate even better NeRFs. We would display the images as they were collected to keep track of what was being captured and to verify that we 
-were varying camera pose and orientation. We also would open RViz2 to see whether our phone's TF was in the right place, as sometimes it would get de-calibrated and veer far from the origin. Something we still haven't figured out is when
-the origin gets designated by the ARKit app. 
+### Usage
+
+Essentially, the way we used this was we built the node, ran it, and then ran
+the ARKit app on Jess's iphone to capture images. To train NeRFs, its important
+to capture images with significant overlap and also varied orientations and
+positions. We usually try to collect about 300 images, but reasonable we could
+collect a lot more (about 2000) without running out of compute to generate even
+better NeRFs. We would display the images as they were collected to keep track
+of what was being captured and to verify that we were varying camera pose and
+orientation. We also would open RViz2 to see whether our phone's TF was in the
+right place, as sometimes it would get de-calibrated and veer far from the
+origin. Something we still haven't figured out is when the origin gets
+designated by the ARKit app.
 
 ### Implementation
-Here is the code itself: 
+
+Here is the code itself:
 
 ```python
 import rclpy  # ROS2 client library for Python
@@ -139,13 +212,13 @@ class data_grabber(Node):
         self.counter = 0  # Image counter
         # JSON structure for camera model and frames
         self.json = {
-            "camera_model": "OPENCV", 
-            "fl_x": 506.65, "fl_y": 507.138, 
-            "cx": 383.64, "cy": 212.61, 
-            "w": 768, "h": 432, 
-            "k1": -0.0329, "k2": 0.058, 
-            "p1": 0.000255, "p2": 0.0, 
-            "aabb_scale": 16, 
+            "camera_model": "OPENCV",
+            "fl_x": 506.65, "fl_y": 507.138,
+            "cx": 383.64, "cy": 212.61,
+            "w": 768, "h": 432,
+            "k1": -0.0329, "k2": 0.058,
+            "p1": 0.000255, "p2": 0.0,
+            "aabb_scale": 16,
             "frames": []
         }
         self.timer = self.create_timer(2.0, self.run_loop)  # Timer for periodic task execution
@@ -165,8 +238,8 @@ class data_grabber(Node):
             self.counter += 1
             cv2.imwrite(self.file_name, rotated_image)
             self.transform_as_list = Rt_mat_from_quaternion_44(
-                self.orientation.x, self.orientation.y, 
-                self.orientation.z, self.orientation.w, 
+                self.orientation.x, self.orientation.y,
+                self.orientation.z, self.orientation.w,
                 self.xpos, self.ypos, self.zpos
             ).tolist()
             self.frame_dict = {"file_path": self.file_name, "transform_matrix": self.transform_as_list}
@@ -178,13 +251,13 @@ class data_grabber(Node):
     def get_odom(self, odom_data):
         # Updates position and orientation from odometry data
         self.xpos, self.ypos, self.zpos = (
-            odom_data.pose.position.x, 
-            odom_data.pose.position.y, 
+            odom_data.pose.position.x,
+            odom_data.pose.position.y,
             odom_data.pose.position.z
         )
         self.orientation = odom_data.pose.orientation
         self.theta = euler_from_quaternion(
-            self.orientation.x, self.orientation.y, 
+            self.orientation.x, self.orientation.y,
             self.orientation.z, self.orientation.w
         )
 
@@ -205,9 +278,9 @@ def main(args=None):
 
 ```
 
-### Output 
+### Output
 
-Here is what the json file looks like: 
+Here is what the json file looks like:
 
 ```json
 {
@@ -255,36 +328,46 @@ Here is what the json file looks like:
         },
 ```
 
-Here is what the image directory looks like: 
-
-## Simulate a circle packing exploration heuristic
-
-See [this]() page to learn more. 
+Here is what the image directory looks like:
 
 ## Create a Script that Could Run a Forward Pass through a NeRF Outside of the Nerfstudio Scaffolding
 
 ### Overview
 
-We wrote a script that given a pose and a nerf config file, would run a forward pass through the NeRF. There was no infrastructure to do this easily in NeRFStudio so we created it outselves by loading
-our config as a model instance and then performing inference using the pose as input. Also something to note is that load_model.py, the script that performs the described functionality, lives inside the nerfstudio repo to make imports easier, not the thingLooker repo. The script is run as a subprocess in our explore.py file, which actually does our image comparison. Explore is our main script. Load_model can be found [here](https://github.com/jes-bro/nerfstudio), in our nerfstudio repo. 
+We wrote a script that given a pose and a nerf config file, would run a forward
+pass through the NeRF. There was no infrastructure to do this easily in
+NeRFStudio so we created it outselves by loading our config as a model instance
+and then performing inference using the pose as input. Also something to note is
+that load_model.py, the script that performs the described functionality, lives
+inside the nerfstudio repo to make imports easier, not the thingLooker repo. The
+script is run as a subprocess in our explore.py file, which actually does our
+image comparison. Explore is our main script. Load_model can be found
+[here](https://github.com/jes-bro/nerfstudio), in our nerfstudio repo.
 
 ### Steps
 
-* Parse the CL arguments to get transform
-* Convert transform to right format for processing
-* Call get_rgb_from_pose_transform() with config pointing to trained NeRF and pose
-* Generate camera object and camera ray bundle corresponding to pose
-* Pass that into NeRF for forward pass
-* Call model.get_rgba_image() to extract the image corresponding to the pose
-* Display the figure for verification
-* Save the image to a file
+- Parse the CL arguments to get transform
+- Convert transform to right format for processing
+- Call get_rgb_from_pose_transform() with config pointing to trained NeRF and
+  pose
+- Generate camera object and camera ray bundle corresponding to pose
+- Pass that into NeRF for forward pass
+- Call model.get_rgba_image() to extract the image corresponding to the pose
+- Display the figure for verification
+- Save the image to a file
 
 ### Usage
 
-This script is used to run a forward pass through the nerf. The function can run standalone as well. When we were testing it initially, rather than parsing CL input we just provided the input at the bottom of the script and called the get_rgba_from_pose_transform() with inputs. In our explore context, the function is called when we need a NeRF output that corresponds to the pose recieved from the iPhone through the arkit repo. 
+This script is used to run a forward pass through the nerf. The function can run
+standalone as well. When we were testing it initially, rather than parsing CL
+input we just provided the input at the bottom of the script and called the
+get_rgba_from_pose_transform() with inputs. In our explore context, the function
+is called when we need a NeRF output that corresponds to the pose recieved from
+the iPhone through the arkit repo.
 
-### Implementation 
-Here is the load_model.py implementation: 
+### Implementation
+
+Here is the load_model.py implementation:
 
 ```python
 import numpy as np
@@ -345,34 +428,43 @@ if __name__ == '__main__':
     # Save the image to a file
     plt.savefig('/home/jess/ros2_ws/output_image.png', bbox_inches='tight', pad_inches=0)
     # Turn off axes so they don't show up in the picture
-    plt.axis('off') 
+    plt.axis('off')
     # Close the plot cleanly
     plt.close()
 ```
 
 ### Output
 
-Here is sample output from the forward pass: 
+Here is sample output from the forward pass:
 
 ## Compare Live Feed to the Inference from the Forward Pass
 
 ### Overview
 
-The explore.py script generates an RGBA image from the NeRF that should correspond to the current pose from the live feed. Right now the pose doesn't correspond because of an issue with coordinate frame misalignment, but the image is generated from the nerf and looks decent, ie. right orientation, scene, resolution, etc. just in the wrong spot. The script does succeed in retrieving the NeRF output image, retrieving the live feed, and calling the required scripts to generate a comparison between those things. 
+The explore.py script generates an RGBA image from the NeRF that should
+correspond to the current pose from the live feed. Right now the pose doesn't
+correspond because of an issue with coordinate frame misalignment, but the image
+is generated from the nerf and looks decent, ie. right orientation, scene,
+resolution, etc. just in the wrong spot. The script does succeed in retrieving
+the NeRF output image, retrieving the live feed, and calling the required
+scripts to generate a comparison between those things.
 
 ### Steps
 
-* Use callbacks to get live image from ROS and the live camera pose
-*  Convert the ROS image to an OpenCV image
-*  Generate camera to world transform
-*  Call image compare function
-*  Get NeRF Image
-*  Call function that compares live feed to NeRF image
+- Use callbacks to get live image from ROS and the live camera pose
+- Convert the ROS image to an OpenCV image
+- Generate camera to world transform
+- Call image compare function
+- Get NeRF Image
+- Call function that compares live feed to NeRF image
 
-### Usage 
-We run this script to do our actual image comparison. It puts all of the pieces together. Once the NeRF output and the live image are in the same coordinate frame, with the same origin, it should work. 
+### Usage
 
-### Implementation 
+We run this script to do our actual image comparison. It puts all of the pieces
+together. Once the NeRF output and the live image are in the same coordinate
+frame, with the same origin, it should work.
+
+### Implementation
 
 ```python
 import rclpy
@@ -450,7 +542,7 @@ class position_knower(Node):
         # Save the information in the json dictionary to an actual json file
         with open('/home/jess/ros2_ws/transforms.json', 'w') as outfile:
             json.dump(self.json, outfile, indent=4)
-    
+
     def image_compare(self,c2w_mat):
         print(f"image in compare? {self.image is True}")
         print("NeRF image being collected")
@@ -477,7 +569,7 @@ class position_knower(Node):
         # Resize first image
         NeRF_img = resize_image(NeRF_img, target_size)
 
-        
+
         # Resize second image
         camera_img = resize_image(cv_image, target_size)
 
@@ -490,22 +582,21 @@ class position_knower(Node):
         list_c2w_mat = c2w_mat.tolist()
         string_c2w = json.dumps(list_c2w_mat)
         process = subprocess.Popen(['/home/jess/ros2_ws/run_load_model.sh', string_c2w],
-                           stdout=subprocess.PIPE, 
+                           stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE)
 
         process.communicate()
         image = cv2.imread('/home/jess/ros2_ws/output_image1.png')
         return image
-    
+
 def main(args=None):
     rclpy.init(args=args)
     node = position_knower()
     rclpy.spin(node)
     node.save_json_to_file()
     rclpy.shutdown()
-    
-```
 
+```
 
 ## Create a script that will spot the difference between two images (specifically one from the live feed and one from the forward pass)
 
@@ -535,9 +626,9 @@ shifting. The script we use to do this is **compare_images.py**.
     * Threshold Difference regions
     * Visualize differences
 
-### Implementation 
+### Implementation
 
-Here is the implementation: 
+Here is the implementation:
 
 ```python
 from skimage.metrics import structural_similarity
@@ -554,7 +645,7 @@ import skimage
 
 def image_compare_SSIM(img1,img2):
     """
-    A Basic Image comparison approach which directly compares images to find regions of difference. 
+    A Basic Image comparison approach which directly compares images to find regions of difference.
     Thresholding is implemented so that difference finding is adjustable. Not robust to small turns.
     """
 
@@ -566,7 +657,7 @@ def image_compare_SSIM(img1,img2):
     print("Similarity Score: {:.3f}%".format(score * 100))
 
     # The diff image contains the actual image differences between the two images
-    # and is represented as a floating point data type so we must convert the array 
+    # and is represented as a floating point data type so we must convert the array
     # to 8-bit unsigned integers in the range [0,255] before we can use it with OpenCV
     diff = (diff * 255).astype("uint8")
 
@@ -599,7 +690,7 @@ def image_compare_SSIM(img1,img2):
 
 def compare_images_DenseV(img1,img2):
     """
-    Another image comparison implementation. This implementation uses sentence transformers to 
+    Another image comparison implementation. This implementation uses sentence transformers to
     compare images and does not produce visual output but is more robust to small turns.
     """
 
@@ -612,8 +703,8 @@ def compare_images_DenseV(img1,img2):
     # Next we compute the embeddings
     encoded_images = model.encode([img1,img2], batch_size=128, convert_to_tensor=True, show_progress_bar=True)
 
-    # Now we run the clustering algorithm. This function compares images aganist 
-    # all other images and returns a list with the pairs that have the highest 
+    # Now we run the clustering algorithm. This function compares images aganist
+    # all other images and returns a list with the pairs that have the highest
     # cosine similarity score
     processed_images = util.paraphrase_mining_embeddings(encoded_images)
     print('Finding duplicate images...')
@@ -632,24 +723,24 @@ def get_camera():
     A script that tests image comparison by using the laptop webcam.
     """
 
-    # define a video capture object 
-    vid = cv2.VideoCapture(0) 
+    # define a video capture object
+    vid = cv2.VideoCapture(0)
 
-    ret, frame = vid.read() 
+    ret, frame = vid.read()
     print("Got frame")
-    # Display the resulting frame 
-    #cv2.imshow('frame', frame) 
-    
-    while(True): 
-        
-        # Capture the video frame 
-        # by frame 
-        ret, frame = vid.read() 
+    # Display the resulting frame
+    #cv2.imshow('frame', frame)
+
+    while(True):
+
+        # Capture the video frame
+        # by frame
+        ret, frame = vid.read()
 
         key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'): 
+        if key == ord('q'):
             break
-            
+
         if key == ord('c'):
             frame1 = frame
             print("frame1 set")
@@ -657,25 +748,25 @@ def get_camera():
         if key == ord('v'):
             frame2 = frame
             print("frame2 set")
-        
+
         if key == ord('b'):
             compare_and_visualize_differences(frame1,frame2)
 
     # After the loop release the cap objectq
-    vid.release() 
-    # Destroy all the windows 
+    vid.release()
+    # Destroy all the windows
     cv2.destroyAllWindows()
 
 def compare_and_visualize_differences(img1, img2, min_contour_area=100):
     """
-    A Basic Image comparison approach which directly compares images to find regions of difference. 
+    A Basic Image comparison approach which directly compares images to find regions of difference.
     Thresholding is implemented so that difference finding is adjustable. Not robust to small turns.
 
     A version of SSIM similarity comparison with a thresholding on the minimum size of difference to detect.
     """
-    
+
     #img1,img2 = replace_blurry_regions(img1,img2,blur_threshold=65)
-    
+
     # Convert images to grayscale
     first_gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
     second_gray = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
@@ -731,8 +822,8 @@ def detect_blurry_regions(image, threshold=100):
 
     # If variance is less than the threshold, it's considered blurry
     mask = np.where(laplacian_var < threshold, 0, 1).astype('uint8')
-    
-    
+
+
     visualize = True
     if visualize:
         plt.figure(figsize=(10, 4))
@@ -745,7 +836,7 @@ def detect_blurry_regions(image, threshold=100):
         plt.title('Laplacian Gradient')
         plt.axis('off')
         plt.show()
-    
+
     return mask
 
 def replace_blurry_regions(img1, img2, blur_threshold=100):
@@ -805,14 +896,14 @@ use to do this is **angle_helpers.py**.
 
 ### Steps
 
-* Receive odometry
-* update the last recorded pose
-* Convert Quaternion to euler angles
-* construct roll, pitch, and yaw rotation matrices from euler angles
-* multiply rotation matrices together
-* append the translation column vector to the right side of the matrix
-* Optional: apply camera transformation
-* return the camera to world transformation matrix
+- Receive odometry
+- update the last recorded pose
+- Convert Quaternion to euler angles
+- construct roll, pitch, and yaw rotation matrices from euler angles
+- multiply rotation matrices together
+- append the translation column vector to the right side of the matrix
+- Optional: apply camera transformation
+- return the camera to world transformation matrix
 
 ### Usage
 
@@ -821,7 +912,8 @@ for training as well as by itself as input to a NeRF's forward pass.
 
 ### Implementation
 
-Here is the angle_helpers implementation: 
+Here is the angle_helpers implementation:
+
 ```python
 import math
 import numpy as np
@@ -843,19 +935,19 @@ def euler_from_quaternion(x, y, z, w):
     t2 = +1.0 if t2 > +1.0 else t2
     t2 = -1.0 if t2 < -1.0 else t2
     pitch_y = math.asin(t2)
-     
+
     # Calculate yaw (z-axis rotation)
     t3 = +2.0 * (w * z + x * y)
     t4 = +1.0 - 2.0 * (y * y + z * z)
     yaw_z = math.atan2(t3, t4)
-     
+
     return roll_x, pitch_y, yaw_z # Returns the Euler angles in radians
 
 def Rt_mat_from_quaternion(x,y,z,w,xpos,ypos,zpos):
     """
     Create a Camera to World matrix using an input quaternion orientation and x,y,z pose.
 
-    Output is in [R |T] format with the translation parameters in a right side 3x1 column while 
+    Output is in [R |T] format with the translation parameters in a right side 3x1 column while
     the combined rotation matrix is a 3x3 matrix on the left.
     """
 
@@ -890,8 +982,8 @@ def Rt_mat_from_quaternion(x,y,z,w,xpos,ypos,zpos):
 def Rt_mat_from_quaternion_44(x,y,z,w,xpos,ypos,zpos):
     """Create a Camera to World matrix using an input quaternion orientation and x,y,z pose.
 
-    Output is in [R |T] format with the translation parameters in a right side 3x1 column while 
-    the combined rotation matrix is a 3x3 matrix on the left. The final output is multiplied by 
+    Output is in [R |T] format with the translation parameters in a right side 3x1 column while
+    the combined rotation matrix is a 3x3 matrix on the left. The final output is multiplied by
     a camera transform.
     """
 
@@ -918,7 +1010,7 @@ def Rt_mat_from_quaternion_44(x,y,z,w,xpos,ypos,zpos):
 
     R = np.dot(Rz_yaw, np.dot(Ry_pitch, Rx_roll))
     R = np.hstack([R, np.array([[xpos], [ypos], [zpos]])])
-    
+
     R = np.vstack([R, np.array([0, 0, 0, 1])])
 
     return R
@@ -937,7 +1029,7 @@ def quaternion_from_euler(roll, pitch, yaw):
     sp = math.sin(pitch * 0.5)
     cr = math.cos(roll * 0.5)
     sr = math.sin(roll * 0.5)
-    
+
     # Compute quaternion components
     q = [0] * 4
     q[0] = cy * cp * sr - sy * sp * cr
@@ -947,7 +1039,6 @@ def quaternion_from_euler(roll, pitch, yaw):
 
     return q
 ```
-
 
 Odometry data is sent by the iPhone as a quaternion orientation and an x,y,z
 coordinate - bundled together as a pose. NeRF forward pass input and training

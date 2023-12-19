@@ -398,11 +398,21 @@ right.
 
 ![Circle and Cone Packing](docs/images/dfs_vs_bfs.png)
 
-A path created by our pathplanning algorithm.
+A path created by our pathplanning algorithm. This particular path was found by
+estimating a solution to the traveling salesman problem using simulated
+annealing, a heuristic commonly used for the traveling salesman problem which
+allows for some random, suboptimal swapping of nodes in a path to aid
+exploration.
 
 ![Circle and Cone Packing](docs/images/final_path.png)
 
-## Creat a script that could run a forward pass through a NeRF outside of the nerfstudio scaffolding
+Implementation details can be found in the file **path_plan.py**. Additional
+functions for finding bisectors, line and circle intersection tests, and
+creating the subregion in which to pack circles are implemented here as well but
+are not elaborated on here as these details are not central to the theory of the
+algorithm.
+
+## Create a script that could run a forward pass through a NeRF outside of the nerfstudio scaffolding
 
 ### Overview
 
@@ -533,9 +543,9 @@ shifting. The script we use to do this is **compare_images.py**.
       - Threshold Difference regions
       - visualize differences
 
-### Implementation 
+### Implementation
 
-Here is the implementation: 
+Here is the implementation:
 
 ```python
 from skimage.metrics import structural_similarity
@@ -552,7 +562,7 @@ import skimage
 
 def image_compare_SSIM(img1,img2):
     """
-    A Basic Image comparison approach which directly compares images to find regions of difference. 
+    A Basic Image comparison approach which directly compares images to find regions of difference.
     Thresholding is implemented so that difference finding is adjustable. Not robust to small turns.
     """
 
@@ -564,7 +574,7 @@ def image_compare_SSIM(img1,img2):
     print("Similarity Score: {:.3f}%".format(score * 100))
 
     # The diff image contains the actual image differences between the two images
-    # and is represented as a floating point data type so we must convert the array 
+    # and is represented as a floating point data type so we must convert the array
     # to 8-bit unsigned integers in the range [0,255] before we can use it with OpenCV
     diff = (diff * 255).astype("uint8")
 
@@ -597,7 +607,7 @@ def image_compare_SSIM(img1,img2):
 
 def compare_images_DenseV(img1,img2):
     """
-    Another image comparison implementation. This implementation uses sentence transformers to 
+    Another image comparison implementation. This implementation uses sentence transformers to
     compare images and does not produce visual output but is more robust to small turns.
     """
 
@@ -610,8 +620,8 @@ def compare_images_DenseV(img1,img2):
     # Next we compute the embeddings
     encoded_images = model.encode([img1,img2], batch_size=128, convert_to_tensor=True, show_progress_bar=True)
 
-    # Now we run the clustering algorithm. This function compares images aganist 
-    # all other images and returns a list with the pairs that have the highest 
+    # Now we run the clustering algorithm. This function compares images aganist
+    # all other images and returns a list with the pairs that have the highest
     # cosine similarity score
     processed_images = util.paraphrase_mining_embeddings(encoded_images)
     print('Finding duplicate images...')
@@ -630,24 +640,24 @@ def get_camera():
     A script that tests image comparison by using the laptop webcam.
     """
 
-    # define a video capture object 
-    vid = cv2.VideoCapture(0) 
+    # define a video capture object
+    vid = cv2.VideoCapture(0)
 
-    ret, frame = vid.read() 
+    ret, frame = vid.read()
     print("Got frame")
-    # Display the resulting frame 
-    #cv2.imshow('frame', frame) 
-    
-    while(True): 
-        
-        # Capture the video frame 
-        # by frame 
-        ret, frame = vid.read() 
+    # Display the resulting frame
+    #cv2.imshow('frame', frame)
+
+    while(True):
+
+        # Capture the video frame
+        # by frame
+        ret, frame = vid.read()
 
         key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'): 
+        if key == ord('q'):
             break
-            
+
         if key == ord('c'):
             frame1 = frame
             print("frame1 set")
@@ -655,25 +665,25 @@ def get_camera():
         if key == ord('v'):
             frame2 = frame
             print("frame2 set")
-        
+
         if key == ord('b'):
             compare_and_visualize_differences(frame1,frame2)
 
     # After the loop release the cap objectq
-    vid.release() 
-    # Destroy all the windows 
+    vid.release()
+    # Destroy all the windows
     cv2.destroyAllWindows()
 
 def compare_and_visualize_differences(img1, img2, min_contour_area=100):
     """
-    A Basic Image comparison approach which directly compares images to find regions of difference. 
+    A Basic Image comparison approach which directly compares images to find regions of difference.
     Thresholding is implemented so that difference finding is adjustable. Not robust to small turns.
 
     A version of SSIM similarity comparison with a thresholding on the minimum size of difference to detect.
     """
-    
+
     #img1,img2 = replace_blurry_regions(img1,img2,blur_threshold=65)
-    
+
     # Convert images to grayscale
     first_gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
     second_gray = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
@@ -729,8 +739,8 @@ def detect_blurry_regions(image, threshold=100):
 
     # If variance is less than the threshold, it's considered blurry
     mask = np.where(laplacian_var < threshold, 0, 1).astype('uint8')
-    
-    
+
+
     visualize = True
     if visualize:
         plt.figure(figsize=(10, 4))
@@ -743,7 +753,7 @@ def detect_blurry_regions(image, threshold=100):
         plt.title('Laplacian Gradient')
         plt.axis('off')
         plt.show()
-    
+
     return mask
 
 def replace_blurry_regions(img1, img2, blur_threshold=100):
@@ -819,7 +829,8 @@ for training as well as by itself as input to a NeRF's forward pass.
 
 ### Implementation
 
-Here is the angle_helpers implementation: 
+Here is the angle_helpers implementation:
+
 ```python
 import math
 import numpy as np
@@ -841,19 +852,19 @@ def euler_from_quaternion(x, y, z, w):
     t2 = +1.0 if t2 > +1.0 else t2
     t2 = -1.0 if t2 < -1.0 else t2
     pitch_y = math.asin(t2)
-     
+
     # Calculate yaw (z-axis rotation)
     t3 = +2.0 * (w * z + x * y)
     t4 = +1.0 - 2.0 * (y * y + z * z)
     yaw_z = math.atan2(t3, t4)
-     
+
     return roll_x, pitch_y, yaw_z # Returns the Euler angles in radians
 
 def Rt_mat_from_quaternion(x,y,z,w,xpos,ypos,zpos):
     """
     Create a Camera to World matrix using an input quaternion orientation and x,y,z pose.
 
-    Output is in [R |T] format with the translation parameters in a right side 3x1 column while 
+    Output is in [R |T] format with the translation parameters in a right side 3x1 column while
     the combined rotation matrix is a 3x3 matrix on the left.
     """
 
@@ -888,8 +899,8 @@ def Rt_mat_from_quaternion(x,y,z,w,xpos,ypos,zpos):
 def Rt_mat_from_quaternion_44(x,y,z,w,xpos,ypos,zpos):
     """Create a Camera to World matrix using an input quaternion orientation and x,y,z pose.
 
-    Output is in [R |T] format with the translation parameters in a right side 3x1 column while 
-    the combined rotation matrix is a 3x3 matrix on the left. The final output is multiplied by 
+    Output is in [R |T] format with the translation parameters in a right side 3x1 column while
+    the combined rotation matrix is a 3x3 matrix on the left. The final output is multiplied by
     a camera transform.
     """
 
@@ -916,7 +927,7 @@ def Rt_mat_from_quaternion_44(x,y,z,w,xpos,ypos,zpos):
 
     R = np.dot(Rz_yaw, np.dot(Ry_pitch, Rx_roll))
     R = np.hstack([R, np.array([[xpos], [ypos], [zpos]])])
-    
+
     R = np.vstack([R, np.array([0, 0, 0, 1])])
 
     return R
@@ -935,7 +946,7 @@ def quaternion_from_euler(roll, pitch, yaw):
     sp = math.sin(pitch * 0.5)
     cr = math.cos(roll * 0.5)
     sr = math.sin(roll * 0.5)
-    
+
     # Compute quaternion components
     q = [0] * 4
     q[0] = cy * cp * sr - sy * sp * cr

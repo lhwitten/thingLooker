@@ -79,6 +79,16 @@ right.
 
 ![Circle and Cone Packing](images/dfs_vs_bfs.png)
 
-A path created by our pathplanning algorithm.
+A path created by our pathplanning algorithm. This particular path was found by
+estimating a solution to the traveling salesman problem using simulated
+annealing, a heuristic commonly used for the traveling salesman problem which
+allows for some random, suboptimal swapping of nodes in a path to aid
+exploration.
 
 ![Circle and Cone Packing](images/final_path.png)
+
+Implementation details can be found in the file **path_plan.py**. Additional
+functions for finding bisectors, line and circle intersection tests, and
+creating the subregion in which to pack circles are implemented here as well but
+are not elaborated on here as these details are not central to the theory of the
+algorithm.
