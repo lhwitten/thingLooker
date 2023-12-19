@@ -56,9 +56,9 @@ active while the ROS node is run at first, hence the need for the subprocess app
 
 So, all in all, this project requires 3 repositories to run:
 
-* A modified version of nerfstudio (with the proprietary **load_model.py** script added to the models directory)
-* The arkit_data_streamer repository, housed in a ros2_ws directory. This manages the pose and camera data recieved from the iPhone
-* The thingLooker repository, housed in the ros2_ws directory as well. This has all of the code related to converting the data into the right formats, generating nerf data, generating output from the nerf, and finally, doing the comparison between the live feed and the corresponding encoded scene image from the NeRF.
+* A modified version of **nerfstudio** (with the proprietary **load_model.py** script added to the models directory)
+* The **arkit_data_streamer** repository, housed in a ros2_ws directory. This manages the pose and camera data recieved from the iPhone
+* The **thingLooker** repository, housed in the ros2_ws directory as well. This has all of the code related to converting the data into the right formats, generating nerf data, generating output from the nerf, and finally, doing the comparison between the live feed and the corresponding encoded scene image from the NeRF.
 
 and 6 scripts: 
 
