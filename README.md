@@ -396,11 +396,11 @@ technique uses depth first search but we found that using breadth first search
 resulted in better circle packings. DFS is on the left while BFS is on the
 right.
 
-![Circle and Cone Packing](images/dfs_vs_bfs.png)
+![Circle and Cone Packing](docs/images/dfs_vs_bfs.png)
 
 A path created by our pathplanning algorithm.
 
-![Circle and Cone Packing](images/final_path.png)
+![Circle and Cone Packing](docs/images/final_path.png)
 
 ## Creat a script that could run a forward pass through a NeRF outside of the nerfstudio scaffolding
 
