@@ -49,6 +49,7 @@ class position_knower(Node):
                 cv2.waitKey(1)
             except CvBridgeError as e:
                 print(e)
+            # Generate camera to world transform
             c2w_mat = Rt_mat_from_quaternion(self.orientation.x,self.orientation.y,self.orientation.z,self.orientation.w,self.xpos,self.ypos,self.zpos)
             self.image_compare(c2w_mat)
             # Save the image
