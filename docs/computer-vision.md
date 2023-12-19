@@ -261,7 +261,7 @@ Here is what the image directory looks like:
 
 See [this]() page to learn more. 
 
-## Creat a script that could run a forward pass through a NeRF outside of the nerfstudio scaffolding
+## Create a Script that Could Run a Forward Pass through a NeRF Outside of the Nerfstudio Scaffolding
 
 ### Overview
 
@@ -354,7 +354,7 @@ if __name__ == '__main__':
 
 Here is sample output from the forward pass: 
 
-## Compare live feed to the inference from the forward pass
+## Compare Live Feed to the Inference from the Forward Pass
 
 ### Overview
 
