@@ -261,7 +261,7 @@ Here is what the image directory looks like:
 
 See [this]() page to learn more. 
 
-## Creat a script that could run a forward pass through a NeRF outside of the nerfstudio scaffolding
+## Create a Script that Could Run a Forward Pass through a NeRF Outside of the Nerfstudio Scaffolding
 
 ### Overview
 
@@ -354,7 +354,7 @@ if __name__ == '__main__':
 
 Here is sample output from the forward pass: 
 
-## Compare live feed to the inference from the forward pass
+## Compare Live Feed to the Inference from the Forward Pass
 
 ### Overview
 
@@ -362,7 +362,12 @@ The explore.py script generates an RGBA image from the NeRF that should correspo
 
 ### Steps
 
-* 
+* Use callbacks to get live image from ROS and the live camera pose
+*  Convert the ROS image to an OpenCV image
+*  Generate camera to world transform
+*  Call image compare function
+*  Get NeRF Image
+*  Call function that compares live feed to NeRF image
 
 ### Usage 
 We run this script to do our actual image comparison. It puts all of the pieces together. Once the NeRF output and the live image are in the same coordinate frame, with the same origin, it should work. 
@@ -421,6 +426,7 @@ class position_knower(Node):
                 cv2.waitKey(1)
             except CvBridgeError as e:
                 print(e)
+            # Generate camera to world transform
             c2w_mat = Rt_mat_from_quaternion(self.orientation.x,self.orientation.y,self.orientation.z,self.orientation.w,self.xpos,self.ypos,self.zpos)
             self.image_compare(c2w_mat)
             # Save the image
@@ -514,14 +520,14 @@ def main(args=None):
 
 ### Output
 
-## Odometry/pose data to generate nerf output (Luke add here- angle helpers)
+## Manipulate Odometry/Pose data to Generate NeRF Output
 
-### Overview
+### Angle Helper Functions Overview
 
-### Steps
+Odometry data is sent by the iPhone as a quaternion orientation and an x,y,z
+coordinate - bundled together as a pose. NeRF forward pass input and training
+protocol require that this orientation and position data be formatted in 4x4 or
+3x4 axes and a column vector containing the translational information.
 
-### Usage 
-
-### Implementation 
-
-### Output
+This camera to world matrix is used in conjunction with an image as input a NeRF
+for training as well as by itself as input to a NeRF's forward pass.
