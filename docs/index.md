@@ -1,3 +1,6 @@
+---
+layout: default
+---
 # Welcome to Our Project!
 
 Welcome to the official website of our project. Here, you'll find all the information you need about our work, our team, and our progress.
