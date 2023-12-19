@@ -58,7 +58,18 @@ So, all in all, this project requires 3 repositories to run:
 
 * A modified version of nerfstudio (with the proprietary **load_model.py** script added to the models directory)
 * The arkit_data_streamer repository, housed in a ros2_ws directory. This manages the pose and camera data recieved from the iPhone
-* The thingLooker repository, housed in the ros2_ws directory as well. This has all of the code related to converting the data into the right formats, generating nerf data, generating output from the nerf, and finally, doing the comparison between the live feed and the corresponding encoded scene image from the NeRF. 
+* The thingLooker repository, housed in the ros2_ws directory as well. This has all of the code related to converting the data into the right formats, generating nerf data, generating output from the nerf, and finally, doing the comparison between the live feed and the corresponding encoded scene image from the NeRF.
+
+and 6 scripts: 
+
+* **explore.py**        (ros2ws/thingLooker)
+* **load_model.py**     (nerfstudio/models)
+* **run_load_model.sh** (ros2ws/thingLooker)
+* **compare_images.py** (ros2ws/thingLooker)
+* **get_nerf_data.py**  (ros2ws/thingLooker)
+* **angle_helpers.py**  (ros2ws/thingLooker)
+
+and this doesn't include the autonomous exploration code. 
 
 # The Pieces
 The next sections will describe the code and use-case for each component of the project. We decided to separate them because they stand-alone as projects in addition to contributing to the overarching goal. 
